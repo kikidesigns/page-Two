@@ -1,11 +1,13 @@
 import { SceneManager } from './core/SceneManager';
 import { CardManager } from './core/CardManager';
+import { DeckManager } from './core/DeckManager';
 import { UIManager } from './ui/UIManager';
 import { StateManager } from './state/StateManager';
 
 class TarotApp {
   private sceneManager: SceneManager;
   private cardManager: CardManager;
+  private deckManager: DeckManager;
   private uiManager: UIManager;
   private stateManager: StateManager;
 
@@ -19,6 +21,7 @@ class TarotApp {
     // Initialize managers
     this.sceneManager = SceneManager.getInstance();
     this.cardManager = new CardManager();
+    this.deckManager = DeckManager.getInstance();
     this.uiManager = new UIManager();
     this.stateManager = new StateManager();
 
@@ -29,6 +32,7 @@ class TarotApp {
     // Initialize core systems
     this.sceneManager.initialize();
     this.cardManager.initialize();
+    this.deckManager.initialize();
     this.uiManager.initialize();
     this.stateManager.initialize();
 
