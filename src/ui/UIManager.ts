@@ -1,14 +1,17 @@
 import { SPREADS } from '../types/SpreadLayout';
 import { StateManager } from '../state/StateManager';
+import { DeckManager } from '../core/DeckManager';
 
 export class UIManager {
   private container: HTMLElement;
   private stateManager: StateManager;
+  private deckManager: DeckManager;
 
   constructor() {
     this.container = document.createElement('div');
     this.container.id = 'ui-container';
     this.stateManager = new StateManager();
+    this.deckManager = DeckManager.getInstance();
   }
 
   public initialize(): void {
@@ -93,8 +96,8 @@ export class UIManager {
     const resetBtn = document.getElementById('reset');
     const multiplayerBtn = document.getElementById('multiplayer');
 
-    shuffleBtn?.addEventListener('click', () => {
-      // Implement shuffle logic
+    shuffleBtn?.addEventListener('click', async () => {
+      await this.deckManager.shuffle();
     });
 
     resetBtn?.addEventListener('click', () => {
