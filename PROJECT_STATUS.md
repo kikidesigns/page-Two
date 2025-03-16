@@ -4,7 +4,7 @@
 Modern 3D Tarot application built with Three.js and TypeScript, featuring interactive card readings and multiplayer support.
 
 ## Current Status
-🚀 Development Phase
+🚀 Development Phase - Core Functionality
 
 ### Completed
 - [x] Project structure established
@@ -13,17 +13,28 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
 - [x] Core file structure implemented
 - [x] Build system setup with Vite
 - [x] Basic Three.js scene integration
+- [x] Test object rendering
+- [x] Camera controls working
+- [x] Basic lighting setup
+
+### Current Focus
+- [ ] Card Customization System
+  - Custom deck profiles
+  - Image upload functionality
+  - Texture mapping system
+  - Basic draw mechanics
 
 ### In Progress
-- [ ] Card system implementation
-- [ ] Basic UI components
-- [ ] Scene rendering optimization
+- [ ] Deck Profile System Implementation
+- [ ] Image Upload Interface
+- [ ] Card Drawing Mechanics
 
 ### Upcoming
+- [ ] Full deck management
+- [ ] Card spread layouts
+- [ ] Advanced animations
 - [ ] Multiplayer support
 - [ ] Asset management system
-- [ ] Card spread layouts
-- [ ] Deck customization
 
 ## Technical Architecture
 
@@ -34,29 +45,44 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
 - WebSocket for multiplayer features
 
 ### Key Components
-1. Scene Management
+1. Scene Management ✓
    - Singleton pattern
    - Camera controls
    - Lighting system
 
-2. Card System
-   - Entity Component System
-   - Texture management
-   - Animation system
+2. Card System (In Progress)
+   - Deck Profiles
+   - Texture Management
+   - Draw Mechanics
+   - Custom Card Sets
 
 3. State Management
-   - Central store
-   - Real-time sync
-   - Event system
+   - Profile Storage
+   - Active Deck State
+   - Card Mappings
 
-## Performance Considerations
-- Texture loading optimization
-- Memory management
-- WebGL best practices
-- Asset preloading
+## Implementation Plan
+
+### Phase 1: Card Customization (Current)
+1. Basic deck profile system
+2. Image upload functionality
+3. Draw card mechanics
+4. Profile management
+
+### Phase 2: Core Features
+1. Complete deck management
+2. Spread layouts
+3. Card animations
+4. Reading interface
+
+### Phase 3: Advanced Features
+1. Multiplayer support
+2. Profile sharing
+3. Advanced animations
+4. Community features
 
 ## Next Steps
-1. Implement card textures and materials
-2. Add card flip animations
-3. Complete spread layouts
-4. Set up multiplayer WebSocket connection
+1. Implement deck profile system
+2. Create image upload interface
+3. Develop card drawing mechanics
+4. Setup profile management
