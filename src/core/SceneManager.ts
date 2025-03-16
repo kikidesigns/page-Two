@@ -16,7 +16,10 @@ export class SceneManager {
       0.1,
       1000
     );
-    this.renderer = new THREE.WebGLRenderer({ antialias: true });
+    this.renderer = new THREE.WebGLRenderer({ 
+      antialias: true,
+      alpha: true 
+    });
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
   }
 
@@ -31,7 +34,7 @@ export class SceneManager {
     // Setup renderer
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
-    document.body.appendChild(this.renderer.domElement);
+    document.getElementById('app')?.appendChild(this.renderer.domElement);
 
     // Setup camera
     this.camera.position.z = 5;
@@ -46,8 +49,29 @@ export class SceneManager {
     directionalLight.position.set(5, 5, 5);
     this.scene.add(ambientLight, directionalLight);
 
+    // Add test object
+    const geometry = new THREE.BoxGeometry(1, 1, 0.1);
+    const material = new THREE.MeshStandardMaterial({ 
+      color: 0x00ff00,
+      metalness: 0.3,
+      roughness: 0.4
+    });
+    const cube = new THREE.Mesh(geometry, material);
+    this.scene.add(cube);
+
+    // Rotate the cube slightly
+    cube.rotation.x = 0.2;
+    cube.rotation.y = 0.4;
+
     // Handle window resize
     window.addEventListener('resize', this.onWindowResize.bind(this));
+
+    // Add grid helper
+    const gridHelper = new THREE.GridHelper(10, 10);
+    this.scene.add(gridHelper);
+
+    // Console log to confirm initialization
+    console.log('Scene initialized');
   }
 
   public update(): void {
