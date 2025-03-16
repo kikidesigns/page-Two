@@ -10,6 +10,13 @@ class TarotApp {
   private stateManager: StateManager;
 
   constructor() {
+    // Create app container
+    const appContainer = document.getElementById('app');
+    if (!appContainer) {
+      throw new Error('App container not found');
+    }
+
+    // Initialize managers
     this.sceneManager = SceneManager.getInstance();
     this.cardManager = new CardManager();
     this.uiManager = new UIManager();
@@ -19,14 +26,17 @@ class TarotApp {
   }
 
   private initialize(): void {
-    // Initialize core systems
-    this.sceneManager.initialize();
-    this.cardManager.initialize();
-    this.uiManager.initialize();
-    this.stateManager.initialize();
+    // Wait for DOM to be ready
+    window.addEventListener('DOMContentLoaded', () => {
+      // Initialize core systems
+      this.sceneManager.initialize();
+      this.cardManager.initialize();
+      this.uiManager.initialize();
+      this.stateManager.initialize();
 
-    // Start render loop
-    this.animate();
+      // Start render loop
+      this.animate();
+    });
   }
 
   private animate(): void {
@@ -36,5 +46,7 @@ class TarotApp {
   }
 }
 
-// Start application
-new TarotApp();
+// Start application when DOM is ready
+window.addEventListener('DOMContentLoaded', () => {
+  new TarotApp();
+});
