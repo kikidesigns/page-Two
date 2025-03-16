@@ -26,17 +26,28 @@ class TarotApp {
   }
 
   private initialize(): void {
-    // Wait for DOM to be ready
-    window.addEventListener('DOMContentLoaded', () => {
-      // Initialize core systems
-      this.sceneManager.initialize();
-      this.cardManager.initialize();
-      this.uiManager.initialize();
-      this.stateManager.initialize();
+    // Initialize core systems
+    this.sceneManager.initialize();
+    this.cardManager.initialize();
+    this.uiManager.initialize();
+    this.stateManager.initialize();
 
-      // Start render loop
-      this.animate();
-    });
+    // Hide loading screen
+    const loading = document.getElementById('loading');
+    if (loading) {
+      loading.style.display = 'none';
+    }
+
+    // Update debug info
+    const debug = document.getElementById('debug');
+    if (debug) {
+      debug.textContent = 'FPS: 60 | Objects: 1';
+    }
+
+    // Start render loop
+    this.animate();
+
+    console.log('TarotApp initialized');
   }
 
   private animate(): void {
