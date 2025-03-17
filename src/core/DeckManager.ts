@@ -1,12 +1,15 @@
 import * as THREE from 'three';
 import { SceneManager } from './SceneManager';
+import { EventEmitter } from 'events';
 
-export class DeckManager {
+export class DeckManager extends EventEmitter {
   private static instance: DeckManager;
   private deckMesh: THREE.Mesh;
   private isAnimating: boolean = false;
+  private remainingCards: number = 78; // Standard tarot deck size
 
   private constructor() {
+    super();
     // Create deck mesh with standard tarot card ratio (1:1.75)
     const cardWidth = 1;
     const cardHeight = 1.75;
@@ -61,9 +64,48 @@ export class DeckManager {
       } else {
         this.deckMesh.rotation.y = startRotation;
         this.isAnimating = false;
+        this.emit('shuffleComplete');
       }
     };
 
     animate();
+  }
+
+  public getDeckPosition(): THREE.Vector3 {
+    return this.deckMesh.position.clone();
+  }
+
+  public getDeckRotation(): THREE.Euler {
+    return this.deckMesh.rotation.clone();
+  }
+
+  public drawCard(): void {
+    if (this.remainingCards > 0) {
+      this.remainingCards--;
+      // Adjust deck thickness based on remaining cards
+      const scale = 0.3 + (this.remainingCards / 78) * 0.7;
+      this.deckMesh.scale.z = scale;
+      this.emit('cardDrawn', this.remainingCards);
+    }
+  }
+
+  public returnCard(): void {
+    if (this.remainingCards < 78) {
+      this.remainingCards++;
+      // Adjust deck thickness based on remaining cards
+      const scale = 0.3 + (this.remainingCards / 78) * 0.7;
+      this.deckMesh.scale.z = scale;
+      this.emit('cardReturned', this.remainingCards);
+    }
+  }
+
+  public getRemainingCards(): number {
+    return this.remainingCards;
+  }
+
+  public reset(): void {
+    this.remainingCards = 78;
+    this.deckMesh.scale.z = 1;
+    this.emit('deckReset');
   }
 }
