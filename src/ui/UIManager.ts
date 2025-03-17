@@ -1,7 +1,6 @@
 import { SPREADS } from '../types/SpreadLayout';
 import { StateManager } from '../state/StateManager';
 import { DeckManager } from '../core/DeckManager';
-import { DeckProfileManager } from '../core/DeckProfileManager';
 import { DrawingManager } from '../core/DrawingManager';
 import * as THREE from 'three';
 
@@ -9,7 +8,6 @@ export class UIManager {
   private container: HTMLElement;
   private stateManager: StateManager;
   private deckManager: DeckManager;
-  private deckProfileManager: DeckProfileManager;
   private drawingManager: DrawingManager;
   private currentSpreadIndex: number = 0;
 
@@ -18,7 +16,6 @@ export class UIManager {
     this.container.id = 'ui-container';
     this.stateManager = new StateManager();
     this.deckManager = DeckManager.getInstance();
-    this.deckProfileManager = DeckProfileManager.getInstance();
     this.drawingManager = DrawingManager.getInstance();
   }
 
@@ -28,7 +25,6 @@ export class UIManager {
   }
 
   private setupUI(): void {
-    // Create UI elements
     this.container.innerHTML = `
       <div class="controls">
         <select id="spread-select">
@@ -47,7 +43,6 @@ export class UIManager {
       </div>
     `;
 
-    // Style the UI
     const styles = document.createElement('style');
     styles.textContent = `
       #ui-container {
@@ -91,7 +86,7 @@ export class UIManager {
       }
 
       .card-info {
-        margin-top: 10px;
+        margin-top: 20px;
         padding: 10px;
         background: rgba(0, 0, 0, 0.5);
         border-radius: 5px;
