@@ -8,7 +8,7 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
 /
 ├── index.html          # Entry point
 ├── package.json        # Dependencies and scripts
-├── tsconfig.json       # TypeScript configuration
+├── tsconfig.json      # TypeScript configuration
 ├── vite.config.ts     # Vite build configuration
 ├── PROJECT_STATUS.md   # Project documentation
 └── src/
@@ -16,13 +16,15 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
     ├── core/          # Core application logic
     │   ├── SceneManager.ts     # Three.js scene handling
     │   ├── CardManager.ts      # Card system management
-    │   └── DeckManager.ts      # Deck and shuffle animations
+    │   ├── DeckManager.ts      # Deck and shuffle animations
+    │   └── DeckProfileManager.ts # Deck profile management
     ├── entities/      # 3D object definitions
     │   └── Card.ts    # Card entity definition
     ├── state/         # Application state management
     │   └── StateManager.ts     # Central state handling
     ├── types/         # TypeScript type definitions
-    │   └── SpreadLayout.ts     # Layout type definitions
+    │   ├── SpreadLayout.ts     # Layout type definitions
+    │   └── DeckProfile.ts      # Deck profile type definitions
     └── ui/            # User interface components
         └── UIManager.ts        # UI management system
 ```
@@ -35,6 +37,11 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
 - State management system
 - Standardized card dimensions (1:1.75 ratio)
 - Optimized deck positioning outside grid
+- Deck profile system
+  - Profile creation and management
+  - Local storage persistence
+  - Profile switching
+  - Basic metadata handling
 
 ## Current Status
 🚀 Development Phase - Core Functionality
@@ -44,10 +51,14 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
   - Standard card dimensions ✅
   - Optimized positioning ✅
   - Shuffle animation ✅
+  - Profile management ✅
 - Card spreads (in progress)
 - Multiplayer (planned)
 
 ## Recent Updates
+- Added deck profile management system
+- Implemented profile creation and editing UI
+- Added local storage persistence for profiles
 - Updated deck dimensions to match standard tarot card ratio (1:1.75)
 - Repositioned deck to optimal location outside grid
 - Added inward-facing angle for better visibility
