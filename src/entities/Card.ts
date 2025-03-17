@@ -16,59 +16,129 @@ export class Card {
   constructor(props: CardProps) {
     const { geometry, position, frontTexture, backTexture } = props;
 
-    // Create a simple colored material for testing
-    const material = new THREE.MeshBasicMaterial({ 
-      color: 0xff0000,
-      side: THREE.DoubleSide 
+    // Create front and back materials
+    const frontMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0xffffff, // White
+      side: THREE.FrontSide
     });
 
-    // Create the mesh
-    this.mesh = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1.75), // Create new geometry instead of using passed one
-      material
-    );
+    const backMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x000088, // Dark blue
+      side: THREE.BackSide
+    });
 
-    // Position and scale
+    // Create card mesh
+    this.mesh = new THREE.Group() as any; // Use Group to hold card and decorations
+    
+    // Create main card plane
+    const cardPlane = new THREE.Mesh(
+      new THREE.PlaneGeometry(1, 1.75),
+      [frontMaterial, backMaterial]
+    );
+    this.mesh.add(cardPlane);
+
+    // Add border (slightly larger plane behind the card)
+    const borderGeometry = new THREE.PlaneGeometry(1.05, 1.80);
+    const borderMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x000000, // Black border
+      side: THREE.DoubleSide
+    });
+    const border = new THREE.Mesh(borderGeometry, borderMaterial);
+    border.position.z = -0.01; // Slightly behind the card
+    this.mesh.add(border);
+
+    // Add decorative elements
+    const decorSize = 0.2;
+    const decorGeometry = new THREE.PlaneGeometry(decorSize, decorSize);
+    const decorMaterial = new THREE.MeshBasicMaterial({ 
+      color: 0x880000, // Dark red
+      side: THREE.FrontSide
+    });
+
+    // Add corner decorations
+    const positions = [
+      [-0.4, 0.8, 0.01],  // Top left
+      [0.4, 0.8, 0.01],   // Top right
+      [-0.4, -0.8, 0.01], // Bottom left
+      [0.4, -0.8, 0.01]   // Bottom right
+    ];
+
+    positions.forEach(([x, y, z]) => {
+      const decor = new THREE.Mesh(decorGeometry, decorMaterial);
+      decor.position.set(x, y, z);
+      this.mesh.add(decor);
+    });
+
+    // Position and scale the entire card
     this.mesh.position.copy(position);
     this.mesh.scale.set(2, 2, 1);
 
-    // Add a helper box to make it easier to see
-    const boxGeometry = new THREE.BoxGeometry(1, 1.75, 0.1);
-    const boxMaterial = new THREE.MeshBasicMaterial({ color: 0x00ff00, wireframe: true });
-    const box = new THREE.Mesh(boxGeometry, boxMaterial);
-    this.mesh.add(box);
+    // Rotate to face up by default
+    this.mesh.rotation.x = -Math.PI / 2;
 
-    // Add axes helper
-    const axesHelper = new THREE.AxesHelper(2);
+    // Add debug helpers
+    const axesHelper = new THREE.AxesHelper(1);
     this.mesh.add(axesHelper);
 
     console.log('Card created:', {
-      geometry: this.mesh.geometry,
-      material: this.mesh.material,
       position: this.mesh.position.toArray(),
-      scale: this.mesh.scale.toArray(),
-      rotation: this.mesh.rotation.toArray()
+      rotation: this.mesh.rotation.toArray(),
+      scale: this.mesh.scale.toArray()
     });
   }
 
-  public getMesh(): THREE.Mesh {
+  public getMesh(): THREE.Object3D {
     return this.mesh;
   }
 
   public setPosition(position: THREE.Vector3): void {
-    this.mesh.position.copy(position);
+    gsap.to(this.mesh.position, {
+      x: position.x,
+      y: position.y,
+      z: position.z,
+      duration: 0.5,
+      ease: "power2.out"
+    });
   }
 
   public setRotation(rotation: THREE.Euler): void {
-    this.mesh.rotation.copy(rotation);
+    // Store the current up-facing rotation
+    const upRotation = -Math.PI / 2;
+    
+    gsap.to(this.mesh.rotation, {
+      x: rotation.x + upRotation, // Add the up-facing rotation
+      y: rotation.y,
+      z: rotation.z,
+      duration: 0.5,
+      ease: "power2.out"
+    });
+  }
+
+  public flip(): void {
+    if (this.isFlipping) return;
+    this.isFlipping = true;
+
+    gsap.to(this.mesh.rotation, {
+      y: this.mesh.rotation.y + Math.PI,
+      duration: 0.7,
+      ease: "power2.inOut",
+      onComplete: () => {
+        this.isFlipping = false;
+        this.isFaceUp = !this.isFaceUp;
+      }
+    });
   }
 
   public dispose(): void {
-    if (Array.isArray(this.mesh.material)) {
-      this.mesh.material.forEach(m => m.dispose());
-    } else {
-      this.mesh.material.dispose();
-    }
-    this.mesh.geometry.dispose();
+    this.mesh.traverse((child) => {
+      if (child instanceof THREE.Mesh) {
+        if (Array.isArray(child.material)) {
+          child.material.forEach(m => m.dispose());
+        } else {
+          child.material.dispose();
+        }
+        child.geometry.dispose();
+      }
+    });
   }
 }
