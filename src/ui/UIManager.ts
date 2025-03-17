@@ -2,12 +2,15 @@ import { SPREADS } from '../types/SpreadLayout';
 import { StateManager } from '../state/StateManager';
 import { DeckManager } from '../core/DeckManager';
 import { DeckProfileManager } from '../core/DeckProfileManager';
+import { DrawingManager } from '../core/DrawingManager';
+import * as THREE from 'three';
 
 export class UIManager {
   private container: HTMLElement;
   private stateManager: StateManager;
   private deckManager: DeckManager;
   private deckProfileManager: DeckProfileManager;
+  private drawingManager: DrawingManager;
 
   constructor() {
     this.container = document.createElement('div');
@@ -15,6 +18,7 @@ export class UIManager {
     this.stateManager = new StateManager();
     this.deckManager = DeckManager.getInstance();
     this.deckProfileManager = DeckProfileManager.getInstance();
+    this.drawingManager = DrawingManager.getInstance();
   }
 
   public initialize(): void {
@@ -31,6 +35,8 @@ export class UIManager {
           <option value="CELTIC_CROSS">Celtic Cross</option>
         </select>
         <button id="shuffle">Shuffle</button>
+        <button id="draw-card">Draw Card</button>
+        <button id="return-card">Return Card</button>
         <button id="reset">Reset</button>
         <button id="multiplayer">Start Multiplayer</button>
         <select id="deck-profile-select">
@@ -133,47 +139,81 @@ export class UIManager {
       .modal-content button {
         margin-top: 10px;
       }
+
+      button:disabled {
+        background: #333333;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
     `;
 
     document.head.appendChild(styles);
     document.body.appendChild(this.container);
     this.updateProfileSelect();
+    this.updateDrawButton();
   }
 
-  private updateProfileSelect(): void {
-    const select = document.getElementById('deck-profile-select') as HTMLSelectElement;
-    if (!select) return;
+  private updateDrawButton(): void {
+    const drawBtn = document.getElementById('draw-card') as HTMLButtonElement;
+    const returnBtn = document.getElementById('return-card') as HTMLButtonElement;
+    if (!drawBtn || !returnBtn) return;
 
-    console.log('Updating profile select...');
+    const remainingCards = this.deckManager.getRemainingCards();
+    const drawnCards = this.drawingManager.getDrawnCards().length;
 
-    // Clear existing options except default
-    while (select.options.length > 1) {
-      select.remove(1);
-    }
+    drawBtn.disabled = remainingCards === 0;
+    returnBtn.disabled = drawnCards === 0;
 
-    // Add profiles
-    const profiles = this.deckProfileManager.getAllProfiles();
-    console.log('Available profiles:', profiles);
-
-    profiles.forEach(profile => {
-      const option = document.createElement('option');
-      option.value = profile.id;
-      option.textContent = profile.name;
-      select.appendChild(option);
-    });
-
-    // Set current selection
-    const activeProfile = this.deckProfileManager.getActiveProfile();
-    console.log('Active profile:', activeProfile);
-    
-    if (activeProfile) {
-      select.value = activeProfile.id;
-    } else {
-      select.value = '';
-    }
+    drawBtn.title = remainingCards === 0 ? 'No cards left in deck' : `${remainingCards} cards remaining`;
+    returnBtn.title = drawnCards === 0 ? 'No cards to return' : `${drawnCards} cards drawn`;
   }
 
   private setupEventListeners(): void {
+    // Existing event listeners...
+
+    // Draw card button
+    const drawCardBtn = document.getElementById('draw-card');
+    if (drawCardBtn) {
+      drawCardBtn.addEventListener('click', async () => {
+        const spread = this.stateManager.getCurrentSpread();
+        if (!spread) return;
+
+        const position = new THREE.Vector3(0, 1, 0); // Default position
+        const rotation = new THREE.Euler(0, 0, 0); // Default rotation
+
+        await this.drawingManager.drawCard(position, rotation);
+        this.deckManager.drawCard();
+        this.updateDrawButton();
+      });
+    }
+
+    // Return card button
+    const returnCardBtn = document.getElementById('return-card');
+    if (returnCardBtn) {
+      returnCardBtn.addEventListener('click', async () => {
+        const drawnCards = this.drawingManager.getDrawnCards();
+        if (drawnCards.length === 0) return;
+
+        const lastCard = drawnCards[drawnCards.length - 1];
+        await this.drawingManager.returnCardToDeck(lastCard);
+        this.deckManager.returnCard();
+        this.updateDrawButton();
+      });
+    }
+
+    // Listen for card events
+    this.drawingManager.on('cardDrawn', () => {
+      this.updateDrawButton();
+    });
+
+    this.drawingManager.on('cardReturned', () => {
+      this.updateDrawButton();
+    });
+
+    this.deckManager.on('deckReset', () => {
+      this.updateDrawButton();
+    });
+
     // Spread selection
     const spreadSelect = document.getElementById('spread-select');
     if (spreadSelect) {
@@ -192,13 +232,12 @@ export class UIManager {
         const profile = target.value ? 
           this.deckProfileManager.getProfile(target.value) : 
           null;
-        console.log('Profile selected:', profile);
         this.deckProfileManager.setActiveProfile(target.value || null);
         this.stateManager.setActiveDeckProfile(profile);
       });
     }
 
-    // Profile management buttons
+    // Profile management
     const newProfileBtn = document.getElementById('new-profile');
     const editProfileBtn = document.getElementById('edit-profile');
     const cancelProfileBtn = document.getElementById('cancel-profile');
@@ -206,7 +245,6 @@ export class UIManager {
     const profileModal = document.getElementById('profile-modal');
 
     newProfileBtn?.addEventListener('click', () => {
-      // Clear form when creating new profile
       const nameInput = document.getElementById('profile-name') as HTMLInputElement;
       const creatorInput = document.getElementById('profile-creator') as HTMLInputElement;
       const descriptionInput = document.getElementById('profile-description') as HTMLTextAreaElement;
@@ -220,12 +258,7 @@ export class UIManager {
 
     editProfileBtn?.addEventListener('click', () => {
       const activeProfile = this.deckProfileManager.getActiveProfile();
-      if (!activeProfile) {
-        console.log('No active profile to edit');
-        return;
-      }
-
-      console.log('Editing profile:', activeProfile);
+      if (!activeProfile) return;
 
       const nameInput = document.getElementById('profile-name') as HTMLInputElement;
       const creatorInput = document.getElementById('profile-creator') as HTMLInputElement;
@@ -247,12 +280,6 @@ export class UIManager {
       const formData = new FormData(e.target as HTMLFormElement);
       const activeProfile = this.deckProfileManager.getActiveProfile();
 
-      console.log('Form data:', {
-        name: formData.get('profile-name'),
-        creator: formData.get('profile-creator'),
-        description: formData.get('profile-description')
-      });
-
       const profileData = {
         name: formData.get('profile-name') as string,
         creator: formData.get('profile-creator') as string,
@@ -263,47 +290,41 @@ export class UIManager {
       };
 
       if (activeProfile) {
-        console.log('Updating profile:', activeProfile.id, profileData);
         this.deckProfileManager.updateProfile(activeProfile.id, profileData);
       } else {
-        console.log('Creating new profile:', profileData);
         this.deckProfileManager.createProfile(profileData);
       }
 
       if (profileModal) profileModal.style.display = 'none';
       this.updateProfileSelect();
     });
+  }
 
-    // Button handlers
-    const shuffleBtn = document.getElementById('shuffle');
-    const resetBtn = document.getElementById('reset');
-    const multiplayerBtn = document.getElementById('multiplayer');
+  private updateProfileSelect(): void {
+    const select = document.getElementById('deck-profile-select') as HTMLSelectElement;
+    if (!select) return;
 
-    shuffleBtn?.addEventListener('click', async () => {
-      await this.deckManager.shuffle();
+    // Clear existing options except default
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+
+    // Add profiles
+    const profiles = this.deckProfileManager.getAllProfiles();
+    profiles.forEach(profile => {
+      const option = document.createElement('option');
+      option.value = profile.id;
+      option.textContent = profile.name;
+      select.appendChild(option);
     });
 
-    resetBtn?.addEventListener('click', () => {
-      // Implement reset logic
-    });
-
-    multiplayerBtn?.addEventListener('click', () => {
-      // Implement multiplayer logic
-    });
-
-    // Listen for profile changes
-    this.deckProfileManager.on('profileCreated', () => {
-      console.log('Profile created event received');
-      this.updateProfileSelect();
-    });
-    this.deckProfileManager.on('profileUpdated', () => {
-      console.log('Profile updated event received');
-      this.updateProfileSelect();
-    });
-    this.deckProfileManager.on('profileDeleted', () => {
-      console.log('Profile deleted event received');
-      this.updateProfileSelect();
-    });
+    // Set current selection
+    const activeProfile = this.deckProfileManager.getActiveProfile();
+    if (activeProfile) {
+      select.value = activeProfile.id;
+    } else {
+      select.value = '';
+    }
   }
 
   public showCardInfo(name: string, description: string): void {
