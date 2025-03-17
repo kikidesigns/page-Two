@@ -11,11 +11,47 @@ export class DrawingManager extends EventEmitter {
   private deckManager: DeckManager;
   private drawnCards: Card[] = [];
   private isAnimating: boolean = false;
+  private defaultTexture: THREE.Texture | null = null;
 
   private constructor() {
     super();
     this.sceneManager = SceneManager.getInstance();
     this.deckManager = DeckManager.getInstance();
+    this.initializeDefaultTexture();
+  }
+
+  private async initializeDefaultTexture() {
+    // Create a default texture with a simple pattern
+    const canvas = document.createElement('canvas');
+    canvas.width = 512;
+    canvas.height = 896; // Maintain 1:1.75 ratio
+    const ctx = canvas.getContext('2d');
+    if (ctx) {
+      // Card back pattern
+      ctx.fillStyle = '#2b2b2b';
+      ctx.fillRect(0, 0, canvas.width, canvas.height);
+      ctx.strokeStyle = '#3b3b3b';
+      ctx.lineWidth = 2;
+      
+      // Create a decorative pattern
+      for (let i = 0; i < canvas.width; i += 40) {
+        for (let j = 0; j < canvas.height; j += 40) {
+          ctx.strokeRect(i, j, 40, 40);
+          ctx.beginPath();
+          ctx.arc(i + 20, j + 20, 10, 0, Math.PI * 2);
+          ctx.stroke();
+        }
+      }
+
+      // Add border
+      ctx.strokeStyle = '#4b4b4b';
+      ctx.lineWidth = 10;
+      ctx.strokeRect(5, 5, canvas.width - 10, canvas.height - 10);
+    }
+    
+    this.defaultTexture = new THREE.CanvasTexture(canvas);
+    this.defaultTexture.needsUpdate = true;
+    console.log('Default texture created');
   }
 
   public static getInstance(): DrawingManager {
@@ -29,25 +65,43 @@ export class DrawingManager extends EventEmitter {
     if (this.isAnimating) return null;
     this.isAnimating = true;
 
-    // Create new card from deck
-    const cardGeometry = new THREE.PlaneGeometry(1, 1.75); // Standard card ratio
-    const card = new Card({
-      geometry: cardGeometry,
-      position: this.deckManager.getDeckPosition(),
-      frontTexture: await this.loadTexture('path/to/front-texture.jpg'),
-      backTexture: await this.loadTexture('path/to/back-texture.jpg')
-    });
+    console.log('Drawing card at position:', position);
 
-    // Add to scene
-    this.sceneManager.getScene().add(card.getMesh());
-    this.drawnCards.push(card);
+    try {
+      // Create new card from deck
+      const cardGeometry = new THREE.PlaneGeometry(1, 1.75); // Standard card ratio
+      
+      if (!this.defaultTexture) {
+        console.error('Default texture not initialized');
+        return null;
+      }
 
-    // Animate drawing
-    await this.animateCardDraw(card, position, rotation);
-    
-    this.isAnimating = false;
-    this.emit('cardDrawn', card);
-    return card;
+      const card = new Card({
+        geometry: cardGeometry,
+        position: this.deckManager.getDeckPosition(),
+        frontTexture: this.defaultTexture,
+        backTexture: this.defaultTexture
+      });
+
+      const cardMesh = card.getMesh();
+      console.log('Card mesh created:', cardMesh);
+
+      // Add to scene
+      this.sceneManager.getScene().add(cardMesh);
+      this.drawnCards.push(card);
+      console.log('Card added to scene, total drawn cards:', this.drawnCards.length);
+
+      // Animate drawing
+      await this.animateCardDraw(card, position, rotation);
+      
+      this.isAnimating = false;
+      this.emit('cardDrawn', card);
+      return card;
+    } catch (error) {
+      console.error('Error drawing card:', error);
+      this.isAnimating = false;
+      return null;
+    }
   }
 
   private async animateCardDraw(card: Card, targetPos: THREE.Vector3, targetRot: THREE.Euler): Promise<void> {
@@ -58,6 +112,8 @@ export class DrawingManager extends EventEmitter {
       startPos.y + 2, // Arc height
       (startPos.z + targetPos.z) / 2
     );
+
+    console.log('Starting card draw animation from:', startPos, 'to:', targetPos);
 
     // Camera transition
     const camera = this.sceneManager.getCamera();
@@ -71,7 +127,10 @@ export class DrawingManager extends EventEmitter {
     return new Promise((resolve) => {
       // Card drawing animation
       gsap.timeline({
-        onComplete: () => resolve()
+        onComplete: () => {
+          console.log('Card draw animation completed');
+          resolve();
+        }
       })
       .to(camera.position, {
         x: cameraTarget.x,
@@ -120,17 +179,21 @@ export class DrawingManager extends EventEmitter {
     if (this.isAnimating) return;
     this.isAnimating = true;
 
+    console.log('Returning card to deck');
+
     const deckPosition = this.deckManager.getDeckPosition();
     const deckRotation = new THREE.Euler(-Math.PI / 6, -Math.PI / 4, 0);
 
     await this.animateCardReturn(card, deckPosition, deckRotation);
     
     // Remove card from scene and drawn cards array
-    this.sceneManager.getScene().remove(card.getMesh());
+    const mesh = card.getMesh();
+    this.sceneManager.getScene().remove(mesh);
     this.drawnCards = this.drawnCards.filter(c => c !== card);
     
     this.isAnimating = false;
     this.emit('cardReturned', card);
+    console.log('Card returned to deck, remaining drawn cards:', this.drawnCards.length);
   }
 
   private async animateCardReturn(card: Card, targetPos: THREE.Vector3, targetRot: THREE.Euler): Promise<void> {
@@ -142,9 +205,14 @@ export class DrawingManager extends EventEmitter {
       (startPos.z + targetPos.z) / 2
     );
 
+    console.log('Starting card return animation');
+
     return new Promise((resolve) => {
       gsap.timeline({
-        onComplete: () => resolve()
+        onComplete: () => {
+          console.log('Card return animation completed');
+          resolve();
+        }
       })
       .to(mesh.position, {
         x: midPoint.x,
@@ -172,14 +240,6 @@ export class DrawingManager extends EventEmitter {
         duration: 0.3,
         ease: "power2.out"
       }, ">-0.2");
-    });
-  }
-
-  private async loadTexture(path: string): Promise<THREE.Texture> {
-    return new Promise((resolve) => {
-      new THREE.TextureLoader().load(path, (texture) => {
-        resolve(texture);
-      });
     });
   }
 
