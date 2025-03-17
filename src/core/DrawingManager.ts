@@ -47,21 +47,9 @@ export class DrawingManager extends EventEmitter {
       return;
     }
 
-    // Create a bright, visible texture
-    ctx.fillStyle = '#ff0000'; // Red background
+    ctx.fillStyle = '#ff0000';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
     
-    ctx.strokeStyle = '#ffffff'; // White border
-    ctx.lineWidth = 40;
-    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
-
-    // Add some visible pattern
-    ctx.fillStyle = '#ffffff';
-    ctx.font = 'bold 120px Arial';
-    ctx.textAlign = 'center';
-    ctx.textBaseline = 'middle';
-    ctx.fillText('♠', canvas.width/2, canvas.height/2);
-
     this.defaultTexture = new THREE.CanvasTexture(canvas);
     this.defaultTexture.needsUpdate = true;
     console.log('DrawingManager: Default texture created');
@@ -93,39 +81,36 @@ export class DrawingManager extends EventEmitter {
       console.log('DrawingManager: Creating card geometry...');
       const cardGeometry = new THREE.PlaneGeometry(1, 1.75);
       
+      // Create card at deck position first
+      const deckPosition = this.deckManager.getDeckPosition();
+      console.log('DrawingManager: Deck position:', deckPosition);
+
       console.log('DrawingManager: Creating card instance...');
       const card = new Card({
         geometry: cardGeometry,
-        position: this.deckManager.getDeckPosition(),
+        position: deckPosition,
         frontTexture: this.defaultTexture,
         backTexture: this.defaultTexture
       });
 
       const cardMesh = card.getMesh();
       console.log('DrawingManager: Card mesh created:', {
-        position: cardMesh.position,
-        rotation: cardMesh.rotation,
-        visible: cardMesh.visible,
-        geometry: cardMesh.geometry,
-        material: cardMesh.material
+        position: cardMesh.position.toArray(),
+        rotation: cardMesh.rotation.toArray(),
+        scale: cardMesh.scale.toArray()
       });
 
+      // Add to scene
       console.log('DrawingManager: Adding card to scene...');
       const scene = this.sceneManager.getScene();
       scene.add(cardMesh);
       
-      // Force an immediate position update
+      // Move to target position
       cardMesh.position.copy(position);
       cardMesh.rotation.copy(rotation);
-      cardMesh.updateMatrix();
-      cardMesh.updateMatrixWorld(true);
 
       this.drawnCards.push(card);
       console.log('DrawingManager: Card added to scene, total cards:', this.drawnCards.length);
-
-      // Debug helper - add axes to visualize card position
-      const axesHelper = new THREE.AxesHelper(1);
-      cardMesh.add(axesHelper);
 
       this.isAnimating = false;
       this.emit('cardDrawn', card);
