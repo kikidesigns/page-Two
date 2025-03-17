@@ -1,5 +1,5 @@
 import { EventEmitter } from 'events';
-import { SpreadLayout } from '../types/SpreadLayout';
+import { SpreadLayout, SPREADS } from '../types/SpreadLayout';
 import { DeckProfile } from '../types/DeckProfile';
 
 interface AppState {
@@ -13,7 +13,7 @@ interface AppState {
 
 export class StateManager extends EventEmitter {
   private state: AppState = {
-    currentSpread: null,
+    currentSpread: SPREADS.THREE_CARD,
     selectedCard: null,
     isMultiplayer: false,
     roomId: null,
@@ -48,6 +48,10 @@ export class StateManager extends EventEmitter {
 
   public setSpread(spread: SpreadLayout): void {
     this.setState({ currentSpread: spread });
+  }
+
+  public getCurrentSpread(): SpreadLayout | null {
+    return this.state.currentSpread;
   }
 
   public selectCard(index: number | null): void {
