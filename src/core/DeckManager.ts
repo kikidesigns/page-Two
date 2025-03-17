@@ -7,8 +7,12 @@ export class DeckManager {
   private isAnimating: boolean = false;
 
   private constructor() {
-    // Create deck mesh (3:5 ratio, thin depth)
-    const geometry = new THREE.BoxGeometry(3, 5, 0.8);
+    // Create deck mesh with standard tarot card ratio (1:1.75)
+    const cardWidth = 1;
+    const cardHeight = 1.75;
+    const deckDepth = 0.8; // Maintain existing depth for visual weight
+    
+    const geometry = new THREE.BoxGeometry(cardWidth, cardHeight, deckDepth);
     const material = new THREE.MeshStandardMaterial({
       color: 0x2b2b2b,
       metalness: 0.2,
@@ -16,9 +20,10 @@ export class DeckManager {
     });
     this.deckMesh = new THREE.Mesh(geometry, material);
     
-    // Position the deck
-    this.deckMesh.position.y = 0.4; // Slight elevation
-    this.deckMesh.rotation.x = -Math.PI / 6; // Slight tilt
+    // Position the deck just outside the grid (grid is 10x10)
+    this.deckMesh.position.set(5.5, 0.4, 5.5); // Right corner outside grid
+    this.deckMesh.rotation.x = -Math.PI / 6; // Maintain slight tilt
+    this.deckMesh.rotation.y = -Math.PI / 4; // Angle towards center
   }
 
   public static getInstance(): DeckManager {
