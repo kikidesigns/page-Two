@@ -1,6 +1,7 @@
 import { SceneManager } from './core/SceneManager';
 import { CardManager } from './core/CardManager';
 import { DeckManager } from './core/DeckManager';
+import { DrawingManager } from './core/DrawingManager';
 import { UIManager } from './ui/UIManager';
 import { StateManager } from './state/StateManager';
 
@@ -8,6 +9,7 @@ class TarotApp {
   private sceneManager: SceneManager;
   private cardManager: CardManager;
   private deckManager: DeckManager;
+  private drawingManager: DrawingManager;
   private uiManager: UIManager;
   private stateManager: StateManager;
 
@@ -22,6 +24,7 @@ class TarotApp {
     this.sceneManager = SceneManager.getInstance();
     this.cardManager = new CardManager();
     this.deckManager = DeckManager.getInstance();
+    this.drawingManager = DrawingManager.getInstance();
     this.uiManager = new UIManager();
     this.stateManager = new StateManager();
 
@@ -35,6 +38,9 @@ class TarotApp {
     this.deckManager.initialize();
     this.uiManager.initialize();
     this.stateManager.initialize();
+
+    // Set initial spread
+    this.stateManager.setSpread(this.stateManager.getDefaultSpread());
 
     // Hide loading screen
     const loading = document.getElementById('loading');
