@@ -24,7 +24,9 @@ export class Card {
       side: THREE.FrontSide,
       transparent: true,
       metalness: 0.1,
-      roughness: 0.8
+      roughness: 0.8,
+      emissive: 0x222222,
+      emissiveIntensity: 0.1
     });
 
     this.backMaterial = new THREE.MeshStandardMaterial({
@@ -32,12 +34,18 @@ export class Card {
       side: THREE.BackSide,
       transparent: true,
       metalness: 0.1,
-      roughness: 0.8
+      roughness: 0.8,
+      emissive: 0x222222,
+      emissiveIntensity: 0.1
     });
 
     // Create mesh with both materials
     this.mesh = new THREE.Mesh(geometry, [this.frontMaterial, this.backMaterial]);
     this.mesh.position.copy(position);
+
+    // Enable shadows
+    this.mesh.castShadow = true;
+    this.mesh.receiveShadow = true;
 
     // Add interaction capability
     this.mesh.userData.clickable = true;
