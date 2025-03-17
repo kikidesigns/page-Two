@@ -4,6 +4,7 @@ import { DeckManager } from './core/DeckManager';
 import { DrawingManager } from './core/DrawingManager';
 import { UIManager } from './ui/UIManager';
 import { StateManager } from './state/StateManager';
+import { SPREADS } from './types/SpreadLayout';
 
 class TarotApp {
   private sceneManager: SceneManager;
@@ -39,8 +40,8 @@ class TarotApp {
     this.uiManager.initialize();
     this.stateManager.initialize();
 
-    // Set initial spread
-    this.stateManager.setSpread(this.stateManager.getDefaultSpread());
+    // Set initial spread to Three Card Spread
+    this.stateManager.setSpread(SPREADS.THREE_CARD);
 
     // Hide loading screen
     const loading = document.getElementById('loading');
