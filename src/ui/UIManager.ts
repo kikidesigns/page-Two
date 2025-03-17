@@ -28,7 +28,7 @@ export class UIManager {
   }
 
   private setupUI(): void {
-    // [Previous UI setup code remains the same...]
+    // Create UI elements
     this.container.innerHTML = `
       <div class="controls">
         <select id="spread-select">
@@ -39,12 +39,6 @@ export class UIManager {
         <button id="draw-card">Draw Card</button>
         <button id="return-card">Return Card</button>
         <button id="reset">Reset</button>
-        <button id="multiplayer">Start Multiplayer</button>
-        <select id="deck-profile-select">
-          <option value="">Default Deck</option>
-        </select>
-        <button id="new-profile">New Profile</button>
-        <button id="edit-profile">Edit Profile</button>
       </div>
       <div class="card-info" style="display: none;">
         <h3>Card Information</h3>
@@ -53,9 +47,59 @@ export class UIManager {
       </div>
     `;
 
-    // [Previous styles remain the same...]
+    // Style the UI
+    const styles = document.createElement('style');
+    styles.textContent = `
+      #ui-container {
+        position: fixed;
+        top: 20px;
+        left: 20px;
+        z-index: 1000;
+        background: rgba(0, 0, 0, 0.7);
+        color: white;
+        padding: 20px;
+        border-radius: 10px;
+      }
+      
+      .controls {
+        display: flex;
+        gap: 10px;
+      }
+      
+      button {
+        padding: 8px 16px;
+        border: none;
+        border-radius: 5px;
+        background: #4a4a4a;
+        color: white;
+        cursor: pointer;
+      }
+      
+      button:hover {
+        background: #5a5a5a;
+      }
+      
+      button:disabled {
+        background: #333333;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
+      
+      select {
+        padding: 8px;
+        border-radius: 5px;
+      }
+
+      .card-info {
+        margin-top: 10px;
+        padding: 10px;
+        background: rgba(0, 0, 0, 0.5);
+        border-radius: 5px;
+      }
+    `;
+
+    document.head.appendChild(styles);
     document.body.appendChild(this.container);
-    this.updateProfileSelect();
     this.updateDrawButton();
   }
 
@@ -65,7 +109,6 @@ export class UIManager {
     const drawCardBtn = document.getElementById('draw-card');
     const returnCardBtn = document.getElementById('return-card');
     const resetBtn = document.getElementById('reset');
-    const multiplayerBtn = document.getElementById('multiplayer');
 
     // Shuffle button
     shuffleBtn?.addEventListener('click', async () => {
@@ -142,8 +185,6 @@ export class UIManager {
         this.updateDrawButton();
       });
     }
-
-    // [Rest of the event listeners remain the same...]
   }
 
   private updateDrawButton(): void {
@@ -167,5 +208,22 @@ export class UIManager {
     returnBtn.title = drawnCards === 0 ? 'No cards to return' : `${drawnCards} cards drawn`;
   }
 
-  // [Rest of the methods remain the same...]
+  public showCardInfo(name: string, description: string): void {
+    const cardInfo = this.container.querySelector('.card-info');
+    const cardName = document.getElementById('card-name');
+    const cardDescription = document.getElementById('card-description');
+
+    if (cardInfo && cardName && cardDescription) {
+      cardInfo.style.display = 'block';
+      cardName.textContent = name;
+      cardDescription.textContent = description;
+    }
+  }
+
+  public hideCardInfo(): void {
+    const cardInfo = this.container.querySelector('.card-info');
+    if (cardInfo) {
+      cardInfo.style.display = 'none';
+    }
+  }
 }
