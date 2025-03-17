@@ -33,15 +33,25 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
 - Card spread selection
 - Deck visualization with shuffle animation
 - State management system
+- Standardized card dimensions (1:1.75 ratio)
+- Optimized deck positioning outside grid
 
 ## Current Status
 🚀 Development Phase - Core Functionality
 - Scene rendering ✅
 - UI controls ✅
 - Deck system ✅
-- Shuffle animation ✅
+  - Standard card dimensions ✅
+  - Optimized positioning ✅
+  - Shuffle animation ✅
 - Card spreads (in progress)
 - Multiplayer (planned)
+
+## Recent Updates
+- Updated deck dimensions to match standard tarot card ratio (1:1.75)
+- Repositioned deck to optimal location outside grid
+- Added inward-facing angle for better visibility
+- Maintained consistent animation system
 
 ## Coding Standards
 [Previous standards section remains unchanged...]
