@@ -13,21 +13,25 @@ export class SceneManager {
 
   private constructor() {
     this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x1a1a1a);
+    
     this.camera = new THREE.PerspectiveCamera(
-      75,
+      60, // Wider FOV
       window.innerWidth / window.innerHeight,
       0.1,
       1000
     );
+    
     this.renderer = new THREE.WebGLRenderer({ 
       antialias: true,
       alpha: true 
     });
+    
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
 
     // Setup lights
-    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
-    this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     this.pointLight = new THREE.PointLight(0xffffff, 0.5);
   }
 
@@ -47,7 +51,7 @@ export class SceneManager {
     document.getElementById('app')?.appendChild(this.renderer.domElement);
 
     // Setup camera
-    this.camera.position.set(0, 5, 8);
+    this.camera.position.set(0, 4, 8); // Position camera higher and further back
     this.camera.lookAt(0, 0, 0);
 
     // Setup controls
@@ -55,6 +59,8 @@ export class SceneManager {
     this.controls.dampingFactor = 0.05;
     this.controls.minDistance = 3;
     this.controls.maxDistance = 15;
+    this.controls.maxPolarAngle = Math.PI / 2; // Prevent camera going below ground
+    this.controls.target.set(0, 0.5, 0); // Look at center of cards
 
     // Setup lighting
     this.directionalLight.position.set(5, 5, 5);
@@ -67,8 +73,21 @@ export class SceneManager {
 
     this.scene.add(this.ambientLight, this.directionalLight, this.pointLight);
 
-    // Add grid helper
-    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+    // Add ground plane
+    const groundGeometry = new THREE.PlaneGeometry(20, 20);
+    const groundMaterial = new THREE.MeshStandardMaterial({ 
+      color: 0x222222,
+      roughness: 0.8,
+      metalness: 0.2
+    });
+    const ground = new THREE.Mesh(groundGeometry, groundMaterial);
+    ground.rotation.x = -Math.PI / 2;
+    ground.receiveShadow = true;
+    this.scene.add(ground);
+
+    // Add subtle grid helper
+    const gridHelper = new THREE.GridHelper(20, 20, 0x444444, 0x333333);
+    gridHelper.position.y = 0.01; // Slightly above ground to prevent z-fighting
     this.scene.add(gridHelper);
 
     // Handle window resize
