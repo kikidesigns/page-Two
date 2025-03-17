@@ -1,5 +1,6 @@
 import { EventEmitter } from 'events';
 import { SpreadLayout } from '../types/SpreadLayout';
+import { DeckProfile } from '../types/DeckProfile';
 
 interface AppState {
   currentSpread: SpreadLayout | null;
@@ -7,6 +8,7 @@ interface AppState {
   isMultiplayer: boolean;
   roomId: string | null;
   customDeck: boolean;
+  activeDeckProfile: DeckProfile | null;
 }
 
 export class StateManager extends EventEmitter {
@@ -15,7 +17,8 @@ export class StateManager extends EventEmitter {
     selectedCard: null,
     isMultiplayer: false,
     roomId: null,
-    customDeck: false
+    customDeck: false,
+    activeDeckProfile: null
   };
 
   constructor() {
@@ -23,7 +26,6 @@ export class StateManager extends EventEmitter {
   }
 
   public initialize(): void {
-    // Initialize WebSocket connection for multiplayer
     this.setupMultiplayer();
   }
 
@@ -50,6 +52,13 @@ export class StateManager extends EventEmitter {
 
   public selectCard(index: number | null): void {
     this.setState({ selectedCard: index });
+  }
+
+  public setActiveDeckProfile(profile: DeckProfile | null): void {
+    this.setState({ 
+      activeDeckProfile: profile,
+      customDeck: !!profile 
+    });
   }
 
   public joinRoom(roomId: string): void {
