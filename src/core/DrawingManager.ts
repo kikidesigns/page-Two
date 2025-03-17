@@ -28,71 +28,72 @@ export class DrawingManager extends EventEmitter {
   }
 
   public async initialize(): Promise<void> {
+    console.log('DrawingManager: Initializing...');
     if (!this.isInitialized) {
       await this.initializeDefaultTexture();
       this.isInitialized = true;
+      console.log('DrawingManager: Initialization complete');
     }
   }
 
   private async initializeDefaultTexture() {
-    // Create a default texture with a simple pattern
+    console.log('DrawingManager: Creating default texture...');
     const canvas = document.createElement('canvas');
     canvas.width = 512;
-    canvas.height = 896; // Maintain 1:1.75 ratio
+    canvas.height = 896;
     const ctx = canvas.getContext('2d');
-    if (ctx) {
-      // Card front pattern
-      ctx.fillStyle = '#ffffff';
-      ctx.fillRect(0, 0, canvas.width, canvas.height);
-      
-      // Add border
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 20;
-      ctx.strokeRect(10, 10, canvas.width - 20, canvas.height - 20);
-
-      // Add some decorative elements
-      ctx.fillStyle = '#4a4a4a';
-      ctx.font = '48px Arial';
-      ctx.textAlign = 'center';
-      ctx.fillText('♠', canvas.width/2, canvas.height/2);
-      
-      // Add corners
-      const cornerSize = 60;
-      ctx.strokeStyle = '#000000';
-      ctx.lineWidth = 4;
-      // Top left
-      ctx.strokeRect(20, 20, cornerSize, cornerSize);
-      // Top right
-      ctx.strokeRect(canvas.width - 20 - cornerSize, 20, cornerSize, cornerSize);
-      // Bottom left
-      ctx.strokeRect(20, canvas.height - 20 - cornerSize, cornerSize, cornerSize);
-      // Bottom right
-      ctx.strokeRect(canvas.width - 20 - cornerSize, canvas.height - 20 - cornerSize, cornerSize, cornerSize);
+    if (!ctx) {
+      console.error('Failed to get 2D context');
+      return;
     }
+
+    // Create a bright, visible texture
+    ctx.fillStyle = '#ff0000'; // Red background
+    ctx.fillRect(0, 0, canvas.width, canvas.height);
     
+    ctx.strokeStyle = '#ffffff'; // White border
+    ctx.lineWidth = 40;
+    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+    // Add some visible pattern
+    ctx.fillStyle = '#ffffff';
+    ctx.font = 'bold 120px Arial';
+    ctx.textAlign = 'center';
+    ctx.textBaseline = 'middle';
+    ctx.fillText('♠', canvas.width/2, canvas.height/2);
+
     this.defaultTexture = new THREE.CanvasTexture(canvas);
     this.defaultTexture.needsUpdate = true;
-    console.log('Default texture created');
+    console.log('DrawingManager: Default texture created');
   }
 
   public async drawCard(position: THREE.Vector3, rotation: THREE.Euler): Promise<Card | null> {
+    console.log('DrawingManager: Drawing card...');
+    console.log('Position:', position);
+    console.log('Rotation:', rotation);
+
     if (!this.isInitialized) {
+      console.log('DrawingManager: Not initialized, initializing now...');
       await this.initialize();
     }
 
-    if (this.isAnimating || !this.defaultTexture) {
-      console.error('Cannot draw card: ' + 
-        (this.isAnimating ? 'Animation in progress' : 'Texture not initialized'));
+    if (this.isAnimating) {
+      console.warn('DrawingManager: Animation in progress, skipping draw');
+      return null;
+    }
+
+    if (!this.defaultTexture) {
+      console.error('DrawingManager: No texture available');
       return null;
     }
 
     this.isAnimating = true;
-    console.log('Drawing card at position:', position);
 
     try {
-      // Create new card from deck
-      const cardGeometry = new THREE.PlaneGeometry(1, 1.75); // Standard card ratio
+      console.log('DrawingManager: Creating card geometry...');
+      const cardGeometry = new THREE.PlaneGeometry(1, 1.75);
       
+      console.log('DrawingManager: Creating card instance...');
       const card = new Card({
         geometry: cardGeometry,
         position: this.deckManager.getDeckPosition(),
@@ -101,140 +102,53 @@ export class DrawingManager extends EventEmitter {
       });
 
       const cardMesh = card.getMesh();
-      console.log('Card mesh created:', cardMesh);
+      console.log('DrawingManager: Card mesh created:', {
+        position: cardMesh.position,
+        rotation: cardMesh.rotation,
+        visible: cardMesh.visible,
+        geometry: cardMesh.geometry,
+        material: cardMesh.material
+      });
 
-      // Add to scene
-      this.sceneManager.getScene().add(cardMesh);
-      this.drawnCards.push(card);
-      console.log('Card added to scene, total drawn cards:', this.drawnCards.length);
-
-      // Animate drawing
-      await this.animateCardDraw(card, position, rotation);
+      console.log('DrawingManager: Adding card to scene...');
+      const scene = this.sceneManager.getScene();
+      scene.add(cardMesh);
       
+      // Force an immediate position update
+      cardMesh.position.copy(position);
+      cardMesh.rotation.copy(rotation);
+      cardMesh.updateMatrix();
+      cardMesh.updateMatrixWorld(true);
+
+      this.drawnCards.push(card);
+      console.log('DrawingManager: Card added to scene, total cards:', this.drawnCards.length);
+
+      // Debug helper - add axes to visualize card position
+      const axesHelper = new THREE.AxesHelper(1);
+      cardMesh.add(axesHelper);
+
       this.isAnimating = false;
       this.emit('cardDrawn', card);
       return card;
     } catch (error) {
-      console.error('Error drawing card:', error);
+      console.error('DrawingManager: Error creating card:', error);
       this.isAnimating = false;
       return null;
     }
-  }
-
-  private async animateCardDraw(card: Card, targetPos: THREE.Vector3, targetRot: THREE.Euler): Promise<void> {
-    const mesh = card.getMesh();
-    const startPos = mesh.position.clone();
-    const midPoint = new THREE.Vector3(
-      (startPos.x + targetPos.x) / 2,
-      startPos.y + 2, // Arc height
-      (startPos.z + targetPos.z) / 2
-    );
-
-    console.log('Starting card draw animation from:', startPos, 'to:', targetPos);
-
-    return new Promise((resolve) => {
-      // Card drawing animation
-      gsap.timeline({
-        onComplete: () => {
-          console.log('Card draw animation completed');
-          resolve();
-        }
-      })
-      .to(mesh.position, {
-        x: midPoint.x,
-        y: midPoint.y,
-        z: midPoint.z,
-        duration: 0.5,
-        ease: "power2.out"
-      })
-      .to(mesh.rotation, {
-        x: Math.PI,
-        duration: 0.5,
-        ease: "power2.inOut"
-      }, "<")
-      .to(mesh.position, {
-        x: targetPos.x,
-        y: targetPos.y,
-        z: targetPos.z,
-        duration: 0.5,
-        ease: "power2.in"
-      })
-      .to(mesh.rotation, {
-        x: targetRot.x,
-        y: targetRot.y,
-        z: targetRot.z,
-        duration: 0.3,
-        ease: "power2.out"
-      }, ">-0.2");
-    });
   }
 
   public async returnCardToDeck(card: Card): Promise<void> {
     if (this.isAnimating) return;
     this.isAnimating = true;
 
-    console.log('Returning card to deck');
-
-    const deckPosition = this.deckManager.getDeckPosition();
-    const deckRotation = new THREE.Euler(-Math.PI / 6, -Math.PI / 4, 0);
-
-    await this.animateCardReturn(card, deckPosition, deckRotation);
-    
-    // Remove card from scene and drawn cards array
+    console.log('DrawingManager: Returning card to deck');
     const mesh = card.getMesh();
     this.sceneManager.getScene().remove(mesh);
     this.drawnCards = this.drawnCards.filter(c => c !== card);
     
     this.isAnimating = false;
     this.emit('cardReturned', card);
-    console.log('Card returned to deck, remaining drawn cards:', this.drawnCards.length);
-  }
-
-  private async animateCardReturn(card: Card, targetPos: THREE.Vector3, targetRot: THREE.Euler): Promise<void> {
-    const mesh = card.getMesh();
-    const startPos = mesh.position.clone();
-    const midPoint = new THREE.Vector3(
-      (startPos.x + targetPos.x) / 2,
-      startPos.y + 2,
-      (startPos.z + targetPos.z) / 2
-    );
-
-    console.log('Starting card return animation');
-
-    return new Promise((resolve) => {
-      gsap.timeline({
-        onComplete: () => {
-          console.log('Card return animation completed');
-          resolve();
-        }
-      })
-      .to(mesh.position, {
-        x: midPoint.x,
-        y: midPoint.y,
-        z: midPoint.z,
-        duration: 0.5,
-        ease: "power2.out"
-      })
-      .to(mesh.rotation, {
-        x: Math.PI,
-        duration: 0.5,
-        ease: "power2.inOut"
-      }, "<")
-      .to(mesh.position, {
-        x: targetPos.x,
-        y: targetPos.y,
-        z: targetPos.z,
-        duration: 0.5,
-        ease: "power2.in"
-      })
-      .to(mesh.rotation, {
-        x: targetRot.x,
-        y: targetRot.y,
-        z: targetRot.z,
-        duration: 0.3,
-        ease: "power2.out"
-      }, ">-0.2");
-    });
+    console.log('DrawingManager: Card returned, remaining cards:', this.drawnCards.length);
   }
 
   public getDrawnCards(): Card[] {
