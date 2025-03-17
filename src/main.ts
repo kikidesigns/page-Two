@@ -32,11 +32,12 @@ class TarotApp {
     this.initialize();
   }
 
-  private initialize(): void {
+  private async initialize(): Promise<void> {
     // Initialize core systems
     this.sceneManager.initialize();
     this.cardManager.initialize();
     this.deckManager.initialize();
+    await this.drawingManager.initialize(); // Wait for texture initialization
     this.uiManager.initialize();
     this.stateManager.initialize();
 
