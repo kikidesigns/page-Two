@@ -7,6 +7,9 @@ export class SceneManager {
   private camera: THREE.PerspectiveCamera;
   private renderer: THREE.WebGLRenderer;
   private controls: OrbitControls;
+  private ambientLight: THREE.AmbientLight;
+  private directionalLight: THREE.DirectionalLight;
+  private pointLight: THREE.PointLight;
 
   private constructor() {
     this.scene = new THREE.Scene();
@@ -21,6 +24,11 @@ export class SceneManager {
       alpha: true 
     });
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
+
+    // Setup lights
+    this.ambientLight = new THREE.AmbientLight(0xffffff, 0.6);
+    this.directionalLight = new THREE.DirectionalLight(0xffffff, 0.8);
+    this.pointLight = new THREE.PointLight(0xffffff, 0.5);
   }
 
   public static getInstance(): SceneManager {
@@ -34,43 +42,38 @@ export class SceneManager {
     // Setup renderer
     this.renderer.setSize(window.innerWidth, window.innerHeight);
     this.renderer.setPixelRatio(window.devicePixelRatio);
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     document.getElementById('app')?.appendChild(this.renderer.domElement);
 
     // Setup camera
-    this.camera.position.z = 5;
+    this.camera.position.set(0, 5, 8);
+    this.camera.lookAt(0, 0, 0);
 
     // Setup controls
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
+    this.controls.minDistance = 3;
+    this.controls.maxDistance = 15;
 
     // Setup lighting
-    const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 5, 5);
-    this.scene.add(ambientLight, directionalLight);
+    this.directionalLight.position.set(5, 5, 5);
+    this.directionalLight.castShadow = true;
+    this.directionalLight.shadow.mapSize.width = 2048;
+    this.directionalLight.shadow.mapSize.height = 2048;
+    
+    this.pointLight.position.set(-5, 5, -5);
+    this.pointLight.castShadow = true;
 
-    // Add test object
-    const geometry = new THREE.BoxGeometry(1, 1, 0.1);
-    const material = new THREE.MeshStandardMaterial({ 
-      color: 0x00ff00,
-      metalness: 0.3,
-      roughness: 0.4
-    });
-    const cube = new THREE.Mesh(geometry, material);
-    this.scene.add(cube);
+    this.scene.add(this.ambientLight, this.directionalLight, this.pointLight);
 
-    // Rotate the cube slightly
-    cube.rotation.x = 0.2;
-    cube.rotation.y = 0.4;
+    // Add grid helper
+    const gridHelper = new THREE.GridHelper(10, 10, 0x444444, 0x222222);
+    this.scene.add(gridHelper);
 
     // Handle window resize
     window.addEventListener('resize', this.onWindowResize.bind(this));
 
-    // Add grid helper
-    const gridHelper = new THREE.GridHelper(10, 10);
-    this.scene.add(gridHelper);
-
-    // Console log to confirm initialization
     console.log('Scene initialized');
   }
 
