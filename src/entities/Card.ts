@@ -18,25 +18,25 @@ export class Card {
   constructor(props: CardProps) {
     const { geometry, position, frontTexture, backTexture } = props;
 
+    console.log('Card: Creating new card at position:', position);
+
     // Create materials with proper settings
-    this.frontMaterial = new THREE.MeshStandardMaterial({
+    this.frontMaterial = new THREE.MeshPhongMaterial({
       map: frontTexture,
       side: THREE.FrontSide,
-      transparent: true,
-      metalness: 0.1,
-      roughness: 0.8,
-      emissive: 0x222222,
-      emissiveIntensity: 0.1
+      transparent: false,
+      color: 0xffffff,
+      emissive: 0x000000,
+      shininess: 30
     });
 
-    this.backMaterial = new THREE.MeshStandardMaterial({
+    this.backMaterial = new THREE.MeshPhongMaterial({
       map: backTexture,
       side: THREE.BackSide,
-      transparent: true,
-      metalness: 0.1,
-      roughness: 0.8,
-      emissive: 0x222222,
-      emissiveIntensity: 0.1
+      transparent: false,
+      color: 0xffffff,
+      emissive: 0x000000,
+      shininess: 30
     });
 
     // Create mesh with both materials
@@ -47,6 +47,9 @@ export class Card {
     this.mesh.castShadow = true;
     this.mesh.receiveShadow = true;
 
+    // Scale up the card slightly
+    this.mesh.scale.set(2, 2, 2);
+
     // Add interaction capability
     this.mesh.userData.clickable = true;
     this.mesh.userData.card = this;
@@ -54,11 +57,15 @@ export class Card {
     // Set initial visibility
     this.mesh.visible = true;
 
-    console.log('Card created:', {
-      position: this.mesh.position,
-      rotation: this.mesh.rotation,
-      materials: this.mesh.material,
-      visible: this.mesh.visible
+    console.log('Card: Created with properties:', {
+      position: this.mesh.position.toArray(),
+      scale: this.mesh.scale.toArray(),
+      rotation: this.mesh.rotation.toArray(),
+      visible: this.mesh.visible,
+      materials: {
+        front: this.frontMaterial,
+        back: this.backMaterial
+      }
     });
   }
 
@@ -68,11 +75,7 @@ export class Card {
     this.isFlipping = true;
     const targetRotation = this.isFaceUp ? 0 : Math.PI;
 
-    console.log('Flipping card:', {
-      from: this.mesh.rotation.y,
-      to: targetRotation,
-      isFaceUp: this.isFaceUp
-    });
+    console.log('Card: Flipping from', this.mesh.rotation.y, 'to', targetRotation);
 
     gsap.to(this.mesh.rotation, {
       y: targetRotation,
@@ -81,16 +84,9 @@ export class Card {
       onComplete: () => {
         this.isFlipping = false;
         this.isFaceUp = !this.isFaceUp;
-        console.log('Flip completed, card is now:', this.isFaceUp ? 'face up' : 'face down');
+        console.log('Card: Flip completed, now', this.isFaceUp ? 'face up' : 'face down');
       }
     });
-  }
-
-  public update(): void {
-    // Update any card-specific animations or states
-    if (this.mesh.visible) {
-      // Add any per-frame updates here
-    }
   }
 
   public getMesh(): THREE.Mesh {
@@ -98,7 +94,7 @@ export class Card {
   }
 
   public setPosition(position: THREE.Vector3): void {
-    console.log('Setting card position:', position);
+    console.log('Card: Setting position to', position.toArray());
     gsap.to(this.mesh.position, {
       x: position.x,
       y: position.y,
@@ -106,13 +102,13 @@ export class Card {
       duration: 0.5,
       ease: "power2.out",
       onComplete: () => {
-        console.log('Position update completed:', this.mesh.position);
+        console.log('Card: Position update completed');
       }
     });
   }
 
   public setRotation(rotation: THREE.Euler): void {
-    console.log('Setting card rotation:', rotation);
+    console.log('Card: Setting rotation to', rotation.toArray());
     gsap.to(this.mesh.rotation, {
       x: rotation.x,
       y: rotation.y,
@@ -120,13 +116,13 @@ export class Card {
       duration: 0.5,
       ease: "power2.out",
       onComplete: () => {
-        console.log('Rotation update completed:', this.mesh.rotation);
+        console.log('Card: Rotation update completed');
       }
     });
   }
 
   public dispose(): void {
-    // Clean up resources
+    console.log('Card: Disposing resources');
     this.frontMaterial.dispose();
     this.backMaterial.dispose();
     this.mesh.geometry.dispose();
