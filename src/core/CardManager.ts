@@ -15,51 +15,45 @@ export class CardManager {
   }
 
   public initialize(): void {
-    // Initialize card deck
-    this.createDeck();
+    console.log('CardManager: Initializing...');
+    // We don't create a deck here anymore since DeckManager handles that
   }
 
   public update(): void {
-    // Update card animations
-    this.cards.forEach(card => card.update());
-  }
-
-  private createDeck(): void {
-    // Create standard 78-card Tarot deck
-    // This is a placeholder for the actual implementation
-    const cardGeometry = new THREE.PlaneGeometry(1, 1.4); // Standard card ratio
-
-    // Example card creation
-    const card = new Card({
-      geometry: cardGeometry,
-      position: new THREE.Vector3(0, 0, 0),
-      frontTexture: this.textureLoader.load('/textures/cards/default-front.jpg'),
-      backTexture: this.textureLoader.load('/textures/cards/default-back.jpg')
-    });
-
-    this.cards.push(card);
-    this.scene.add(card.getMesh());
+    // GSAP handles animations, no need for updates
   }
 
   public setSpread(spread: SpreadLayout): void {
+    console.log('CardManager: Setting spread:', spread.name);
     this.currentSpread = spread;
-    this.arrangeCards();
   }
 
-  private arrangeCards(): void {
-    if (!this.currentSpread) return;
-
-    // Arrange cards according to spread layout
-    // This will be implemented based on spread configurations
-  }
-
-  public flipCard(cardIndex: number): void {
-    if (cardIndex >= 0 && cardIndex < this.cards.length) {
-      this.cards[cardIndex].flip();
+  public getSpreadPosition(index: number): THREE.Vector3 | null {
+    if (!this.currentSpread || index >= this.currentSpread.positions.length) {
+      return null;
     }
+    const position = this.currentSpread.positions[index].position;
+    return new THREE.Vector3(position.x, position.y, position.z);
   }
 
-  public shuffleDeck(): void {
-    // Implement deck shuffling with animations
+  public getSpreadRotation(index: number): THREE.Euler | null {
+    if (!this.currentSpread || index >= this.currentSpread.positions.length) {
+      return null;
+    }
+    const rotation = this.currentSpread.positions[index].rotation;
+    return new THREE.Euler(rotation.x, rotation.y, rotation.z);
+  }
+
+  public getCurrentSpread(): SpreadLayout | null {
+    return this.currentSpread;
+  }
+
+  public dispose(): void {
+    // Clean up resources
+    this.cards.forEach(card => {
+      card.dispose();
+      this.scene.remove(card.getMesh());
+    });
+    this.cards = [];
   }
 }
