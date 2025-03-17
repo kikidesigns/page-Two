@@ -48,9 +48,9 @@ export class UIManager {
         <div class="modal-content">
           <h3>Deck Profile</h3>
           <form id="profile-form">
-            <input type="text" id="profile-name" placeholder="Profile Name" required>
-            <input type="text" id="profile-creator" placeholder="Creator Name" required>
-            <textarea id="profile-description" placeholder="Description"></textarea>
+            <input type="text" id="profile-name" name="profile-name" placeholder="Profile Name" required>
+            <input type="text" id="profile-creator" name="profile-creator" placeholder="Creator Name" required>
+            <textarea id="profile-description" name="profile-description" placeholder="Description"></textarea>
             <div id="texture-mappings"></div>
             <button type="submit">Save Profile</button>
             <button type="button" id="cancel-profile">Cancel</button>
@@ -113,6 +113,7 @@ export class UIManager {
         border-radius: 10px;
         max-width: 500px;
         margin: 50px auto;
+        color: white;
       }
 
       #profile-form {
@@ -128,6 +129,10 @@ export class UIManager {
         background: #3a3a3a;
         color: white;
       }
+
+      .modal-content button {
+        margin-top: 10px;
+      }
     `;
 
     document.head.appendChild(styles);
@@ -139,6 +144,8 @@ export class UIManager {
     const select = document.getElementById('deck-profile-select') as HTMLSelectElement;
     if (!select) return;
 
+    console.log('Updating profile select...');
+
     // Clear existing options except default
     while (select.options.length > 1) {
       select.remove(1);
@@ -146,6 +153,8 @@ export class UIManager {
 
     // Add profiles
     const profiles = this.deckProfileManager.getAllProfiles();
+    console.log('Available profiles:', profiles);
+
     profiles.forEach(profile => {
       const option = document.createElement('option');
       option.value = profile.id;
@@ -155,6 +164,8 @@ export class UIManager {
 
     // Set current selection
     const activeProfile = this.deckProfileManager.getActiveProfile();
+    console.log('Active profile:', activeProfile);
+    
     if (activeProfile) {
       select.value = activeProfile.id;
     } else {
@@ -181,6 +192,7 @@ export class UIManager {
         const profile = target.value ? 
           this.deckProfileManager.getProfile(target.value) : 
           null;
+        console.log('Profile selected:', profile);
         this.deckProfileManager.setActiveProfile(target.value || null);
         this.stateManager.setActiveDeckProfile(profile);
       });
@@ -194,12 +206,26 @@ export class UIManager {
     const profileModal = document.getElementById('profile-modal');
 
     newProfileBtn?.addEventListener('click', () => {
+      // Clear form when creating new profile
+      const nameInput = document.getElementById('profile-name') as HTMLInputElement;
+      const creatorInput = document.getElementById('profile-creator') as HTMLInputElement;
+      const descriptionInput = document.getElementById('profile-description') as HTMLTextAreaElement;
+
+      if (nameInput) nameInput.value = '';
+      if (creatorInput) creatorInput.value = '';
+      if (descriptionInput) descriptionInput.value = '';
+
       if (profileModal) profileModal.style.display = 'block';
     });
 
     editProfileBtn?.addEventListener('click', () => {
       const activeProfile = this.deckProfileManager.getActiveProfile();
-      if (!activeProfile) return;
+      if (!activeProfile) {
+        console.log('No active profile to edit');
+        return;
+      }
+
+      console.log('Editing profile:', activeProfile);
 
       const nameInput = document.getElementById('profile-name') as HTMLInputElement;
       const creatorInput = document.getElementById('profile-creator') as HTMLInputElement;
@@ -221,18 +247,26 @@ export class UIManager {
       const formData = new FormData(e.target as HTMLFormElement);
       const activeProfile = this.deckProfileManager.getActiveProfile();
 
+      console.log('Form data:', {
+        name: formData.get('profile-name'),
+        creator: formData.get('profile-creator'),
+        description: formData.get('profile-description')
+      });
+
       const profileData = {
         name: formData.get('profile-name') as string,
         creator: formData.get('profile-creator') as string,
         metadata: {
           description: formData.get('profile-description') as string
         },
-        cardTextures: {} // To be implemented with texture upload system
+        cardTextures: {}
       };
 
       if (activeProfile) {
+        console.log('Updating profile:', activeProfile.id, profileData);
         this.deckProfileManager.updateProfile(activeProfile.id, profileData);
       } else {
+        console.log('Creating new profile:', profileData);
         this.deckProfileManager.createProfile(profileData);
       }
 
@@ -258,9 +292,18 @@ export class UIManager {
     });
 
     // Listen for profile changes
-    this.deckProfileManager.on('profileCreated', () => this.updateProfileSelect());
-    this.deckProfileManager.on('profileUpdated', () => this.updateProfileSelect());
-    this.deckProfileManager.on('profileDeleted', () => this.updateProfileSelect());
+    this.deckProfileManager.on('profileCreated', () => {
+      console.log('Profile created event received');
+      this.updateProfileSelect();
+    });
+    this.deckProfileManager.on('profileUpdated', () => {
+      console.log('Profile updated event received');
+      this.updateProfileSelect();
+    });
+    this.deckProfileManager.on('profileDeleted', () => {
+      console.log('Profile deleted event received');
+      this.updateProfileSelect();
+    });
   }
 
   public showCardInfo(name: string, description: string): void {
