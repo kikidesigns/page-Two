@@ -19,19 +19,19 @@ export const SPREADS = {
     description: 'Past, Present, Future',
     positions: [
       {
-        position: new Vector3(-2, 0, 0),
+        position: new Vector3(-2.5, 0.5, 0),
         rotation: new Vector3(0, 0, 0),
         name: 'Past',
         description: 'Past influences'
       },
       {
-        position: new Vector3(0, 0, 0),
+        position: new Vector3(0, 0.5, 0),
         rotation: new Vector3(0, 0, 0),
         name: 'Present',
         description: 'Current situation'
       },
       {
-        position: new Vector3(2, 0, 0),
+        position: new Vector3(2.5, 0.5, 0),
         rotation: new Vector3(0, 0, 0),
         name: 'Future',
         description: 'Future outcome'
@@ -42,8 +42,13 @@ export const SPREADS = {
     name: 'Celtic Cross',
     description: 'Traditional 10-card spread',
     positions: [
-      // Celtic Cross positions would be defined here
-      // This is a placeholder for the full implementation
+      {
+        position: new Vector3(0, 0.5, 0),
+        rotation: new Vector3(0, 0, 0),
+        name: 'Significator',
+        description: 'Central theme'
+      }
+      // Additional positions will be added later
     ]
   }
 } as const;
