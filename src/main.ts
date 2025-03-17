@@ -33,6 +33,8 @@ class TarotApp {
   }
 
   private async initialize(): Promise<void> {
+    console.log('TarotApp: Initializing...');
+    
     // Initialize core systems
     this.sceneManager.initialize();
     this.cardManager.initialize();
@@ -50,22 +52,15 @@ class TarotApp {
       loading.style.display = 'none';
     }
 
-    // Update debug info
-    const debug = document.getElementById('debug');
-    if (debug) {
-      debug.textContent = 'FPS: 60 | Objects: 1';
-    }
-
     // Start render loop
     this.animate();
 
-    console.log('TarotApp initialized');
+    console.log('TarotApp: Initialization complete');
   }
 
   private animate(): void {
     requestAnimationFrame(() => this.animate());
     this.sceneManager.update();
-    this.cardManager.update();
   }
 }
 
