@@ -17,6 +17,7 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
     │   ├── SceneManager.ts     # Three.js scene handling
     │   ├── CardManager.ts      # Card system management
     │   ├── DeckManager.ts      # Deck and shuffle animations
+    │   ├── DrawingManager.ts   # Card drawing mechanics
     │   └── DeckProfileManager.ts # Deck profile management
     ├── entities/      # 3D object definitions
     │   └── Card.ts    # Card entity definition
@@ -42,6 +43,11 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
   - Local storage persistence ✅
   - Profile switching ✅
   - Basic metadata handling ✅
+- Card drawing mechanics ✅
+  - Draw/return functionality ✅
+  - Animation system ✅
+  - State management integration ✅
+  - Camera transitions ✅
 
 ## Current Status
 🚀 Development Phase - Core Functionality
@@ -54,12 +60,16 @@ Completed:
   - Optimized positioning ✅
   - Shuffle animation ✅
   - Profile management ✅
+- Card drawing mechanics ✅
+  - Animation system ✅
+  - Draw/return functionality ✅
+  - State management integration ✅
+  - Default texture system ✅
 
 In Progress:
-- Card drawing mechanics (Issue #3)
-  - Animation system
-  - Draw/return functionality
-  - State management integration
+- Card spread positioning
+- Scene cleanup
+- Card visibility improvements
 
 Planned:
 - Image upload system (Issue #2)
@@ -68,22 +78,23 @@ Planned:
 - Multiplayer support
 
 ## Recent Updates
-1. Completed deck profile management system:
-   - Added profile creation and editing UI
-   - Implemented local storage persistence
-   - Added profile switching functionality
+1. Implemented card drawing mechanics:
+   - Added DrawingManager for card handling
+   - Created default texture system
+   - Implemented draw/return animations
+   - Added camera transitions
    - Integrated with state management
 
 2. Core system improvements:
-   - Updated deck dimensions to standard ratio
-   - Optimized deck positioning
-   - Enhanced UI controls
-   - Improved state management
+   - Enhanced deck visualization
+   - Added card animation system
+   - Improved UI feedback
+   - Added debug logging
 
 ## Next Steps
-1. Implement card drawing mechanics
-2. Develop image upload system
-3. Create image processing utilities
+1. Complete card spread positioning
+2. Develop image upload system (Issue #2)
+3. Create image processing utilities (Issue #5)
 4. Integrate texture management
 
 ## Performance Metrics
@@ -93,7 +104,9 @@ Planned:
 - State Updates: < 16ms ✅
 
 ## Known Issues
-- None currently
+- Card visibility needs improvement
+- Test cube needs removal
+- Spread positions need implementation
 
 ## Coding Standards
 [Previous standards section remains unchanged...]
