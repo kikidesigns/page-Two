@@ -1,17 +1,20 @@
 import { SPREADS } from '../types/SpreadLayout';
 import { StateManager } from '../state/StateManager';
 import { DeckManager } from '../core/DeckManager';
+import { DeckProfileManager } from '../core/DeckProfileManager';
 
 export class UIManager {
   private container: HTMLElement;
   private stateManager: StateManager;
   private deckManager: DeckManager;
+  private deckProfileManager: DeckProfileManager;
 
   constructor() {
     this.container = document.createElement('div');
     this.container.id = 'ui-container';
     this.stateManager = new StateManager();
     this.deckManager = DeckManager.getInstance();
+    this.deckProfileManager = DeckProfileManager.getInstance();
   }
 
   public initialize(): void {
@@ -30,11 +33,29 @@ export class UIManager {
         <button id="shuffle">Shuffle</button>
         <button id="reset">Reset</button>
         <button id="multiplayer">Start Multiplayer</button>
+        <select id="deck-profile-select">
+          <option value="">Default Deck</option>
+        </select>
+        <button id="new-profile">New Profile</button>
+        <button id="edit-profile">Edit Profile</button>
       </div>
       <div class="card-info" style="display: none;">
         <h3>Card Information</h3>
         <p id="card-name"></p>
         <p id="card-description"></p>
+      </div>
+      <div id="profile-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <h3>Deck Profile</h3>
+          <form id="profile-form">
+            <input type="text" id="profile-name" placeholder="Profile Name" required>
+            <input type="text" id="profile-creator" placeholder="Creator Name" required>
+            <textarea id="profile-description" placeholder="Description"></textarea>
+            <div id="texture-mappings"></div>
+            <button type="submit">Save Profile</button>
+            <button type="button" id="cancel-profile">Cancel</button>
+          </form>
+        </div>
       </div>
     `;
 
@@ -74,10 +95,71 @@ export class UIManager {
         padding: 8px;
         border-radius: 5px;
       }
+
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
+        background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+      }
+
+      .modal-content {
+        background: #2a2a2a;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 500px;
+        margin: 50px auto;
+      }
+
+      #profile-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      input, textarea {
+        padding: 8px;
+        border-radius: 5px;
+        border: 1px solid #4a4a4a;
+        background: #3a3a3a;
+        color: white;
+      }
     `;
 
     document.head.appendChild(styles);
     document.body.appendChild(this.container);
+    this.updateProfileSelect();
+  }
+
+  private updateProfileSelect(): void {
+    const select = document.getElementById('deck-profile-select') as HTMLSelectElement;
+    if (!select) return;
+
+    // Clear existing options except default
+    while (select.options.length > 1) {
+      select.remove(1);
+    }
+
+    // Add profiles
+    const profiles = this.deckProfileManager.getAllProfiles();
+    profiles.forEach(profile => {
+      const option = document.createElement('option');
+      option.value = profile.id;
+      option.textContent = profile.name;
+      select.appendChild(option);
+    });
+
+    // Set current selection
+    const activeProfile = this.deckProfileManager.getActiveProfile();
+    if (activeProfile) {
+      select.value = activeProfile.id;
+    } else {
+      select.value = '';
+    }
   }
 
   private setupEventListeners(): void {
@@ -90,6 +172,73 @@ export class UIManager {
         this.stateManager.setSpread(spread);
       });
     }
+
+    // Profile selection
+    const profileSelect = document.getElementById('deck-profile-select');
+    if (profileSelect) {
+      profileSelect.addEventListener('change', (e) => {
+        const target = e.target as HTMLSelectElement;
+        const profile = target.value ? 
+          this.deckProfileManager.getProfile(target.value) : 
+          null;
+        this.deckProfileManager.setActiveProfile(target.value || null);
+        this.stateManager.setActiveDeckProfile(profile);
+      });
+    }
+
+    // Profile management buttons
+    const newProfileBtn = document.getElementById('new-profile');
+    const editProfileBtn = document.getElementById('edit-profile');
+    const cancelProfileBtn = document.getElementById('cancel-profile');
+    const profileForm = document.getElementById('profile-form');
+    const profileModal = document.getElementById('profile-modal');
+
+    newProfileBtn?.addEventListener('click', () => {
+      if (profileModal) profileModal.style.display = 'block';
+    });
+
+    editProfileBtn?.addEventListener('click', () => {
+      const activeProfile = this.deckProfileManager.getActiveProfile();
+      if (!activeProfile) return;
+
+      const nameInput = document.getElementById('profile-name') as HTMLInputElement;
+      const creatorInput = document.getElementById('profile-creator') as HTMLInputElement;
+      const descriptionInput = document.getElementById('profile-description') as HTMLTextAreaElement;
+
+      if (nameInput) nameInput.value = activeProfile.name;
+      if (creatorInput) creatorInput.value = activeProfile.creator;
+      if (descriptionInput) descriptionInput.value = activeProfile.metadata?.description || '';
+
+      if (profileModal) profileModal.style.display = 'block';
+    });
+
+    cancelProfileBtn?.addEventListener('click', () => {
+      if (profileModal) profileModal.style.display = 'none';
+    });
+
+    profileForm?.addEventListener('submit', (e) => {
+      e.preventDefault();
+      const formData = new FormData(e.target as HTMLFormElement);
+      const activeProfile = this.deckProfileManager.getActiveProfile();
+
+      const profileData = {
+        name: formData.get('profile-name') as string,
+        creator: formData.get('profile-creator') as string,
+        metadata: {
+          description: formData.get('profile-description') as string
+        },
+        cardTextures: {} // To be implemented with texture upload system
+      };
+
+      if (activeProfile) {
+        this.deckProfileManager.updateProfile(activeProfile.id, profileData);
+      } else {
+        this.deckProfileManager.createProfile(profileData);
+      }
+
+      if (profileModal) profileModal.style.display = 'none';
+      this.updateProfileSelect();
+    });
 
     // Button handlers
     const shuffleBtn = document.getElementById('shuffle');
@@ -107,6 +256,11 @@ export class UIManager {
     multiplayerBtn?.addEventListener('click', () => {
       // Implement multiplayer logic
     });
+
+    // Listen for profile changes
+    this.deckProfileManager.on('profileCreated', () => this.updateProfileSelect());
+    this.deckProfileManager.on('profileUpdated', () => this.updateProfileSelect());
+    this.deckProfileManager.on('profileDeleted', () => this.updateProfileSelect());
   }
 
   public showCardInfo(name: string, description: string): void {
