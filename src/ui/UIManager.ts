@@ -1,6 +1,7 @@
 import { SPREADS } from '../types/SpreadLayout';
 import { StateManager } from '../state/StateManager';
 import { DeckManager } from '../core/DeckManager';
+import { DeckProfileManager } from '../core/DeckProfileManager';
 import { DrawingManager } from '../core/DrawingManager';
 import * as THREE from 'three';
 
@@ -8,6 +9,7 @@ export class UIManager {
   private container: HTMLElement;
   private stateManager: StateManager;
   private deckManager: DeckManager;
+  private deckProfileManager: DeckProfileManager;
   private drawingManager: DrawingManager;
   private currentSpreadIndex: number = 0;
 
@@ -16,6 +18,7 @@ export class UIManager {
     this.container.id = 'ui-container';
     this.stateManager = new StateManager();
     this.deckManager = DeckManager.getInstance();
+    this.deckProfileManager = DeckProfileManager.getInstance();
     this.drawingManager = DrawingManager.getInstance();
   }
 
@@ -25,6 +28,7 @@ export class UIManager {
   }
 
   private setupUI(): void {
+    // Create UI elements
     this.container.innerHTML = `
       <div class="controls">
         <select id="spread-select">
@@ -35,14 +39,34 @@ export class UIManager {
         <button id="draw-card">Draw Card</button>
         <button id="return-card">Return Card</button>
         <button id="reset">Reset</button>
+        <button id="multiplayer">Start Multiplayer</button>
+        <select id="deck-profile-select">
+          <option value="">Default Deck</option>
+        </select>
+        <button id="new-profile">New Profile</button>
+        <button id="edit-profile">Edit Profile</button>
       </div>
       <div class="card-info" style="display: none;">
         <h3>Card Information</h3>
         <p id="card-name"></p>
         <p id="card-description"></p>
       </div>
+      <div id="profile-modal" class="modal" style="display: none;">
+        <div class="modal-content">
+          <h3>Deck Profile</h3>
+          <form id="profile-form">
+            <input type="text" id="profile-name" name="profile-name" placeholder="Profile Name" required>
+            <input type="text" id="profile-creator" name="profile-creator" placeholder="Creator Name" required>
+            <textarea id="profile-description" name="profile-description" placeholder="Description"></textarea>
+            <div id="texture-mappings"></div>
+            <button type="submit">Save Profile</button>
+            <button type="button" id="cancel-profile">Cancel</button>
+          </form>
+        </div>
+      </div>
     `;
 
+    // Style the UI
     const styles = document.createElement('style');
     styles.textContent = `
       #ui-container {
@@ -74,22 +98,53 @@ export class UIManager {
         background: #5a5a5a;
       }
       
-      button:disabled {
-        background: #333333;
-        cursor: not-allowed;
-        opacity: 0.7;
-      }
-      
       select {
         padding: 8px;
         border-radius: 5px;
       }
 
-      .card-info {
-        margin-top: 20px;
-        padding: 10px;
+      .modal {
+        display: none;
+        position: fixed;
+        top: 0;
+        left: 0;
+        width: 100%;
+        height: 100%;
         background: rgba(0, 0, 0, 0.5);
+        z-index: 2000;
+      }
+
+      .modal-content {
+        background: #2a2a2a;
+        padding: 20px;
+        border-radius: 10px;
+        max-width: 500px;
+        margin: 50px auto;
+        color: white;
+      }
+
+      #profile-form {
+        display: flex;
+        flex-direction: column;
+        gap: 10px;
+      }
+
+      input, textarea {
+        padding: 8px;
         border-radius: 5px;
+        border: 1px solid #4a4a4a;
+        background: #3a3a3a;
+        color: white;
+      }
+
+      .modal-content button {
+        margin-top: 10px;
+      }
+
+      button:disabled {
+        background: #333333;
+        cursor: not-allowed;
+        opacity: 0.7;
       }
     `;
 
@@ -193,7 +248,7 @@ export class UIManager {
 
     drawBtn.disabled = remainingCards === 0 || 
                       !spread || 
-                      this.currentSpreadIndex >= spread.positions.length;
+                      this.currentSpreadIndex >= (spread?.positions.length || 0);
     returnBtn.disabled = drawnCards === 0;
 
     drawBtn.title = remainingCards === 0 ? 'No cards left in deck' : 
