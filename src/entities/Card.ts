@@ -20,34 +20,30 @@ export class Card {
 
     console.log('Card: Creating new card at position:', position);
 
-    // Create materials with proper settings
-    this.frontMaterial = new THREE.MeshPhongMaterial({
+    // Create simple materials for better visibility
+    this.frontMaterial = new THREE.MeshBasicMaterial({
       map: frontTexture,
       side: THREE.FrontSide,
-      transparent: false,
-      color: 0xffffff,
-      emissive: 0x000000,
-      shininess: 30
+      color: 0xff0000, // Red
     });
 
-    this.backMaterial = new THREE.MeshPhongMaterial({
+    this.backMaterial = new THREE.MeshBasicMaterial({
       map: backTexture,
       side: THREE.BackSide,
-      transparent: false,
-      color: 0xffffff,
-      emissive: 0x000000,
-      shininess: 30
+      color: 0x0000ff, // Blue
     });
 
-    // Create mesh with both materials
+    // Create mesh with both materials as an array
     this.mesh = new THREE.Mesh(geometry, [this.frontMaterial, this.backMaterial]);
+    
+    // Set initial position and rotation
     this.mesh.position.copy(position);
+    this.mesh.rotation.set(0, 0, 0); // Start flat
+    
+    // Rotate to face camera
+    this.mesh.rotateX(-Math.PI / 2);
 
-    // Enable shadows
-    this.mesh.castShadow = true;
-    this.mesh.receiveShadow = true;
-
-    // Scale up the card slightly
+    // Scale up for visibility
     this.mesh.scale.set(2, 2, 2);
 
     // Add interaction capability
@@ -69,56 +65,20 @@ export class Card {
     });
   }
 
-  public flip(): void {
-    if (this.isFlipping) return;
-
-    this.isFlipping = true;
-    const targetRotation = this.isFaceUp ? 0 : Math.PI;
-
-    console.log('Card: Flipping from', this.mesh.rotation.y, 'to', targetRotation);
-
-    gsap.to(this.mesh.rotation, {
-      y: targetRotation,
-      duration: 1,
-      ease: "power2.inOut",
-      onComplete: () => {
-        this.isFlipping = false;
-        this.isFaceUp = !this.isFaceUp;
-        console.log('Card: Flip completed, now', this.isFaceUp ? 'face up' : 'face down');
-      }
-    });
-  }
-
   public getMesh(): THREE.Mesh {
     return this.mesh;
   }
 
   public setPosition(position: THREE.Vector3): void {
     console.log('Card: Setting position to', position.toArray());
-    gsap.to(this.mesh.position, {
-      x: position.x,
-      y: position.y,
-      z: position.z,
-      duration: 0.5,
-      ease: "power2.out",
-      onComplete: () => {
-        console.log('Card: Position update completed');
-      }
-    });
+    this.mesh.position.copy(position);
   }
 
   public setRotation(rotation: THREE.Euler): void {
     console.log('Card: Setting rotation to', rotation.toArray());
-    gsap.to(this.mesh.rotation, {
-      x: rotation.x,
-      y: rotation.y,
-      z: rotation.z,
-      duration: 0.5,
-      ease: "power2.out",
-      onComplete: () => {
-        console.log('Card: Rotation update completed');
-      }
-    });
+    this.mesh.rotation.copy(rotation);
+    // Ensure card faces up
+    this.mesh.rotateX(-Math.PI / 2);
   }
 
   public dispose(): void {
