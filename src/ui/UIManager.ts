@@ -169,37 +169,52 @@ export class UIManager {
   }
 
   private setupEventListeners(): void {
-    // Existing event listeners...
+    // Button handlers
+    const shuffleBtn = document.getElementById('shuffle');
+    const drawCardBtn = document.getElementById('draw-card');
+    const returnCardBtn = document.getElementById('return-card');
+    const resetBtn = document.getElementById('reset');
+    const multiplayerBtn = document.getElementById('multiplayer');
+
+    // Shuffle button
+    shuffleBtn?.addEventListener('click', async () => {
+      await this.deckManager.shuffle();
+    });
 
     // Draw card button
-    const drawCardBtn = document.getElementById('draw-card');
-    if (drawCardBtn) {
-      drawCardBtn.addEventListener('click', async () => {
-        const spread = this.stateManager.getCurrentSpread();
-        if (!spread) return;
+    drawCardBtn?.addEventListener('click', async () => {
+      const spread = this.stateManager.getCurrentSpread();
+      if (!spread) return;
 
-        const position = new THREE.Vector3(0, 1, 0); // Default position
-        const rotation = new THREE.Euler(0, 0, 0); // Default rotation
+      const position = new THREE.Vector3(0, 1, 0); // Default position
+      const rotation = new THREE.Euler(0, 0, 0); // Default rotation
 
-        await this.drawingManager.drawCard(position, rotation);
-        this.deckManager.drawCard();
-        this.updateDrawButton();
-      });
-    }
+      await this.drawingManager.drawCard(position, rotation);
+      this.deckManager.drawCard();
+      this.updateDrawButton();
+    });
 
     // Return card button
-    const returnCardBtn = document.getElementById('return-card');
-    if (returnCardBtn) {
-      returnCardBtn.addEventListener('click', async () => {
-        const drawnCards = this.drawingManager.getDrawnCards();
-        if (drawnCards.length === 0) return;
+    returnCardBtn?.addEventListener('click', async () => {
+      const drawnCards = this.drawingManager.getDrawnCards();
+      if (drawnCards.length === 0) return;
 
-        const lastCard = drawnCards[drawnCards.length - 1];
-        await this.drawingManager.returnCardToDeck(lastCard);
-        this.deckManager.returnCard();
-        this.updateDrawButton();
-      });
-    }
+      const lastCard = drawnCards[drawnCards.length - 1];
+      await this.drawingManager.returnCardToDeck(lastCard);
+      this.deckManager.returnCard();
+      this.updateDrawButton();
+    });
+
+    // Reset button
+    resetBtn?.addEventListener('click', () => {
+      this.deckManager.reset();
+      this.updateDrawButton();
+    });
+
+    // Multiplayer button
+    multiplayerBtn?.addEventListener('click', () => {
+      // Implement multiplayer logic
+    });
 
     // Listen for card events
     this.drawingManager.on('cardDrawn', () => {
