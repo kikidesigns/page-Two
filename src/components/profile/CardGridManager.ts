@@ -4,6 +4,7 @@ import { TextureManager } from '../../core/TextureManager';
 import { ProcessedImage } from '../../utils/ImageProcessor';
 import { DropZone } from '../shared/DropZone';
 import { Button } from '../shared/Button';
+import { ImageUploadZone } from './ImageUploadZone';
 
 export interface CardSlot {
   id: string;
@@ -14,6 +15,8 @@ export interface CardSlot {
 export class CardGridManager extends EventEmitter {
   private element: HTMLDivElement;
   private gridContainer: HTMLDivElement;
+  private statusContainer: HTMLDivElement;
+  private imageUpload: ImageUploadZone;
   private profileManager: DeckProfileManager;
   private textureManager: TextureManager;
   private slots: Map<string, CardSlot>;
@@ -27,6 +30,10 @@ export class CardGridManager extends EventEmitter {
     this.element = document.createElement('div');
     this.element.className = 'card-grid-manager';
 
+    // Create status container
+    this.statusContainer = document.createElement('div');
+    this.statusContainer.className = 'grid-status';
+
     this.gridContainer = document.createElement('div');
     this.gridContainer.className = 'card-grid';
 
@@ -34,10 +41,22 @@ export class CardGridManager extends EventEmitter {
     header.className = 'card-grid-header';
     header.appendChild(document.createElement('h2')).textContent = 'Card Images';
 
+    // Create image upload zone
+    this.imageUpload = new ImageUploadZone();
+    this.imageUpload.on('save', (uploads) => this.handleUploads(uploads));
+
     this.element.appendChild(header);
+    this.element.appendChild(this.statusContainer);
+    this.element.appendChild(this.imageUpload.getElement());
     this.element.appendChild(this.gridContainer);
 
     this.initializeSlots();
+    this.updateStatus('Select cards to upload images');
+  }
+
+  private updateStatus(message: string, type: 'info' | 'success' | 'error' = 'info'): void {
+    this.statusContainer.className = `grid-status status-${type}`;
+    this.statusContainer.textContent = message;
   }
 
   private initializeSlots(): void {
@@ -81,16 +100,22 @@ export class CardGridManager extends EventEmitter {
     
     if (slot.texture) {
       preview.style.backgroundImage = `url(${slot.texture.dataUrl})`;
+      preview.classList.add('has-image');
     } else {
       preview.classList.add('empty');
       preview.textContent = '➕';
     }
 
+    // Create card name
+    const name = document.createElement('div');
+    name.className = 'card-name';
+    name.textContent = slot.name;
+
     // Create drop zone for this slot
     const dropZone = new DropZone({
       onFilesAccepted: (files) => this.handleSlotUpload(slot.id, files[0]),
       maxFiles: 1,
-      label: slot.name
+      label: `Upload image for ${slot.name}`
     });
 
     // Create actions
@@ -106,6 +131,7 @@ export class CardGridManager extends EventEmitter {
       actions.appendChild(removeButton.getElement());
     }
 
+    element.appendChild(name);
     element.appendChild(preview);
     element.appendChild(dropZone.getElement());
     element.appendChild(actions);
@@ -140,9 +166,11 @@ export class CardGridManager extends EventEmitter {
           slotElement.replaceWith(newSlotElement);
         }
 
+        this.updateStatus(`Image uploaded for ${slot.name}`, 'success');
         this.emit('textureUpdated', { slotId, texture: result });
       }
     } catch (error) {
+      this.updateStatus(`Failed to upload image: ${error.message}`, 'error');
       this.emit('error', error);
     }
   }
@@ -170,9 +198,57 @@ export class CardGridManager extends EventEmitter {
           slotElement.replaceWith(newSlotElement);
         }
 
+        this.updateStatus(`Image removed from ${slot.name}`, 'info');
         this.emit('textureRemoved', slotId);
       }
     } catch (error) {
+      this.updateStatus(`Failed to remove image: ${error.message}`, 'error');
+      this.emit('error', error);
+    }
+  }
+
+  private async handleUploads(uploads: Array<{ file: File, result: ProcessedImage }>): Promise<void> {
+    try {
+      const activeProfile = this.profileManager.getActiveProfile();
+      if (!activeProfile) {
+        throw new Error('No active profile');
+      }
+
+      const updates: Record<string, string> = {};
+      let updatedCount = 0;
+
+      // Find matching slots for each upload
+      for (const upload of uploads) {
+        // Try to match by filename first
+        const filename = upload.file.name.toLowerCase();
+        const matchingSlot = Array.from(this.slots.values()).find(slot => 
+          filename.includes(slot.name.toLowerCase()) ||
+          slot.name.toLowerCase().includes(filename.replace(/\.[^/.]+$/, ''))
+        );
+
+        if (matchingSlot) {
+          updates[matchingSlot.id] = upload.result.dataUrl;
+          matchingSlot.texture = upload.result;
+          updatedCount++;
+        }
+      }
+
+      if (updatedCount > 0) {
+        // Update profile
+        await this.profileManager.updateProfile(activeProfile.id, {
+          cardTextures: {
+            ...activeProfile.cardTextures,
+            ...updates
+          }
+        });
+
+        this.render();
+        this.updateStatus(`Updated ${updatedCount} card images`, 'success');
+      } else {
+        this.updateStatus('No matching cards found for uploads', 'error');
+      }
+    } catch (error) {
+      this.updateStatus(`Failed to process uploads: ${error.message}`, 'error');
       this.emit('error', error);
     }
   }
@@ -203,6 +279,7 @@ export class CardGridManager extends EventEmitter {
       });
 
       this.render();
+      this.updateStatus('Profile loaded. Upload or modify card images.');
     }
   }
 
@@ -211,6 +288,7 @@ export class CardGridManager extends EventEmitter {
   }
 
   public dispose(): void {
+    this.imageUpload.dispose();
     this.slots.clear();
     this.removeAllListeners();
   }
