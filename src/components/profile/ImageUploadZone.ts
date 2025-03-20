@@ -3,6 +3,7 @@ import { TextureManager } from '../../core/TextureManager';
 import { ProcessedImage } from '../../utils/ImageProcessor';
 import { DropZone } from '../shared/DropZone';
 import { ProgressBar } from '../shared/ProgressBar';
+import { Button } from '../shared/Button';
 
 export interface UploadStatus {
   file: File;
@@ -16,6 +17,8 @@ export class ImageUploadZone extends EventEmitter {
   private element: HTMLDivElement;
   private dropZone: DropZone;
   private previewContainer: HTMLDivElement;
+  private statusContainer: HTMLDivElement;
+  private saveButton: Button;
   private textureManager: TextureManager;
   private uploads: Map<string, UploadStatus>;
 
@@ -27,25 +30,53 @@ export class ImageUploadZone extends EventEmitter {
     this.element = document.createElement('div');
     this.element.className = 'image-upload-zone';
 
+    // Create status container
+    this.statusContainer = document.createElement('div');
+    this.statusContainer.className = 'upload-status';
+    
     this.previewContainer = document.createElement('div');
     this.previewContainer.className = 'preview-container';
+
+    // Create save button
+    this.saveButton = new Button({
+      text: 'Save & Apply Changes',
+      variant: 'primary',
+      disabled: true,
+      onClick: () => this.handleSave()
+    });
 
     this.initializeDropZone();
     
     this.element.appendChild(this.dropZone.getElement());
+    this.element.appendChild(this.statusContainer);
     this.element.appendChild(this.previewContainer);
+    this.element.appendChild(this.saveButton.getElement());
+
+    // Add initial helper text
+    this.updateStatus('Ready to upload card images');
   }
 
   private initializeDropZone(): void {
     this.dropZone = new DropZone({
       onFilesAccepted: (files) => this.handleFiles(files),
-      onError: (error) => this.emit('error', error),
+      onError: (error) => {
+        this.emit('error', error);
+        this.updateStatus(`Error: ${error.message}`, 'error');
+      },
       accept: ['image/jpeg', 'image/png', 'image/webp'],
       label: 'Drop card images here or click to select'
     });
   }
 
+  private updateStatus(message: string, type: 'info' | 'success' | 'error' = 'info'): void {
+    this.statusContainer.className = `upload-status status-${type}`;
+    this.statusContainer.textContent = message;
+  }
+
   private async handleFiles(files: File[]): Promise<void> {
+    this.updateStatus(`Processing ${files.length} file(s)...`, 'info');
+    let successCount = 0;
+
     for (const file of files) {
       const id = crypto.randomUUID();
       
@@ -76,6 +107,7 @@ export class ImageUploadZone extends EventEmitter {
           result
         });
 
+        successCount++;
         this.emit('success', { id, result });
       } catch (error) {
         // Update status to error
@@ -86,6 +118,17 @@ export class ImageUploadZone extends EventEmitter {
         });
       }
     }
+
+    // Update overall status
+    if (successCount > 0) {
+      this.updateStatus(
+        `Successfully uploaded ${successCount} file(s). Click "Save & Apply Changes" to continue.`,
+        'success'
+      );
+      this.saveButton.update({ disabled: false });
+    } else {
+      this.updateStatus('No files were uploaded successfully.', 'error');
+    }
   }
 
   private createPreviewElement(id: string): void {
@@ -94,6 +137,11 @@ export class ImageUploadZone extends EventEmitter {
     const previewElement = document.createElement('div');
     previewElement.className = 'preview-item';
     previewElement.dataset.uploadId = id;
+
+    // Create file name display
+    const fileName = document.createElement('div');
+    fileName.className = 'preview-filename';
+    fileName.textContent = upload.file.name;
 
     // Create thumbnail
     const thumbnail = document.createElement('div');
@@ -109,6 +157,7 @@ export class ImageUploadZone extends EventEmitter {
     const statusText = document.createElement('div');
     statusText.className = 'preview-status';
     
+    previewElement.appendChild(fileName);
     previewElement.appendChild(thumbnail);
     previewElement.appendChild(progressBar.getElement());
     previewElement.appendChild(statusText);
@@ -149,6 +198,20 @@ export class ImageUploadZone extends EventEmitter {
     }
   }
 
+  private handleSave(): void {
+    const successfulUploads = Array.from(this.uploads.values())
+      .filter(upload => upload.status === 'success');
+
+    if (successfulUploads.length > 0) {
+      this.emit('save', successfulUploads.map(upload => ({
+        file: upload.file,
+        result: upload.result!
+      })));
+      this.updateStatus('Changes saved and applied successfully!', 'success');
+      this.saveButton.update({ disabled: true });
+    }
+  }
+
   public getElement(): HTMLDivElement {
     return this.element;
   }
@@ -160,10 +223,13 @@ export class ImageUploadZone extends EventEmitter {
   public clearUploads(): void {
     this.uploads.clear();
     this.previewContainer.innerHTML = '';
+    this.updateStatus('Ready to upload card images');
+    this.saveButton.update({ disabled: true });
   }
 
   public dispose(): void {
     this.dropZone.dispose();
+    this.saveButton.dispose();
     this.uploads.clear();
     this.removeAllListeners();
   }
