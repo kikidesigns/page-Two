@@ -20,16 +20,32 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
     │   ├── DrawingManager.ts   # Card drawing mechanics
     │   ├── TextureManager.ts   # Texture loading and caching
     │   └── DeckProfileManager.ts # Deck profile management
+    ├── components/    # UI Components
+    │   ├── profile/   # Profile management components
+    │   │   ├── ProfileCreationForm.ts
+    │   │   ├── ProfileSelector.ts
+    │   │   ├── ImageUploadZone.ts
+    │   │   └── CardGridManager.ts
+    │   └── shared/    # Shared UI components
+    │       ├── Button.ts
+    │       ├── Input.ts
+    │       ├── DropZone.ts
+    │       └── ProgressBar.ts
     ├── entities/      # 3D object definitions
     │   └── Card.ts    # Card entity definition
     ├── state/         # Application state management
     │   └── StateManager.ts     # Central state handling
+    ├── styles/        # CSS styles
+    │   └── profile/   # Profile-related styles
+    │       ├── forms.css
+    │       ├── grid.css
+    │       └── upload.css
     ├── types/         # TypeScript type definitions
     │   ├── SpreadLayout.ts     # Layout type definitions
     │   └── DeckProfile.ts      # Deck profile type definitions
     ├── utils/         # Utility functions
     │   └── ImageProcessor.ts   # Image processing utilities
-    └── ui/            # User interface components
+    └── ui/            # UI management
         └── UIManager.ts        # UI management system
 ```
 
@@ -63,7 +79,7 @@ Modern 3D Tarot application built with Three.js and TypeScript, featuring intera
   - Error handling ✅
 
 ## Current Status
-🚀 Development Phase - Core Functionality
+🚀 Development Phase - UI Implementation
 
 Completed:
 - Scene rendering ✅
@@ -88,8 +104,12 @@ Completed:
   - Memory handling ✅
 
 In Progress:
+- Profile UI components
+  - Creation form
+  - Image upload interface
+  - Profile selector
+  - Card grid manager
 - Card spread positioning
-- Scene cleanup
 - Performance optimization
 
 Planned:
@@ -118,11 +138,23 @@ Planned:
    - Enhanced error handling
    - Added texture caching
 
+4. Added UI component structure:
+   - Created profile management components
+   - Added shared UI components
+   - Implemented style organization
+   - Added component documentation
+
+## Minimum User Flow
+1. Create new deck profile
+2. Upload card images
+3. Save and manage profiles
+4. Draw and interact with cards
+
 ## Next Steps
-1. Complete card spread positioning
-2. Implement advanced animations
-3. Add sound effects
-4. Begin multiplayer support
+1. Implement profile UI components (Issue #9)
+2. Complete card spread positioning
+3. Add advanced animations
+4. Integrate sound effects
 
 ## Performance Metrics
 - Render Performance: 60 FPS target ✅
@@ -130,39 +162,52 @@ Planned:
 - Memory Usage: < 100MB baseline ✅
 - State Updates: < 16ms ✅
 - Texture Loading: < 500ms per texture ✅
+- UI Response: < 100ms ✅
 
 ## Known Issues
 - Card spread positions need implementation
 - Performance optimization needed for multiple textures
 - Memory management for large decks needs improvement
 
-## Coding Standards
+## Component Guidelines
 - Use TypeScript strict mode
-- Follow singleton pattern for managers
-- Implement proper error handling
-- Use async/await for texture loading
+- Follow component composition patterns
+- Implement proper error boundaries
+- Use async/await for data operations
 - Maintain proper memory management
 - Document public methods
 - Use proper typing
+- Follow UI/UX best practices
+
+## UI Component Standards
+- Consistent error handling
+- Loading state indicators
+- Proper form validation
+- Responsive design
+- Accessibility compliance
+- Clear user feedback
+- Consistent styling
+- Performance optimization
 
 ## Documentation Requirements
 - Update JSDoc comments
 - Maintain README.md
-- Document texture requirements
+- Document component APIs
 - Keep PROJECT_STATUS.md current
-- Add error handling guides
+- Add UI/UX guidelines
 
 ## Testing Strategy
-- Unit tests for utilities
-- Integration tests for managers
-- Performance testing for textures
+- Unit tests for components
+- Integration tests for flows
+- Performance testing
 - Memory leak testing
 - Error handling verification
+- UI interaction testing
 
 ## Performance Guidelines
-- Optimize texture sizes
-- Implement proper disposal
-- Use texture pooling
+- Optimize component renders
+- Implement proper cleanup
+- Use proper event handling
 - Manage memory usage
 - Monitor frame rate
-- Cache frequently used textures
+- Cache frequently used data
