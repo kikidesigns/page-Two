@@ -2,12 +2,16 @@ import { SPREADS } from '../types/SpreadLayout';
 import { StateManager } from '../state/StateManager';
 import { DeckManager } from '../core/DeckManager';
 import { DeckProfileManager } from '../core/DeckProfileManager';
+import { DrawingManager } from '../core/DrawingManager';
+import * as THREE from 'three';
 
 export class UIManager {
   private container: HTMLElement;
   private stateManager: StateManager;
   private deckManager: DeckManager;
   private deckProfileManager: DeckProfileManager;
+  private drawingManager: DrawingManager;
+  private currentSpreadIndex: number = 0;
 
   constructor() {
     this.container = document.createElement('div');
@@ -15,6 +19,7 @@ export class UIManager {
     this.stateManager = new StateManager();
     this.deckManager = DeckManager.getInstance();
     this.deckProfileManager = DeckProfileManager.getInstance();
+    this.drawingManager = DrawingManager.getInstance();
   }
 
   public initialize(): void {
@@ -31,6 +36,8 @@ export class UIManager {
           <option value="CELTIC_CROSS">Celtic Cross</option>
         </select>
         <button id="shuffle">Shuffle</button>
+        <button id="draw-card">Draw Card</button>
+        <button id="return-card">Return Card</button>
         <button id="reset">Reset</button>
         <button id="multiplayer">Start Multiplayer</button>
         <select id="deck-profile-select">
@@ -133,47 +140,90 @@ export class UIManager {
       .modal-content button {
         margin-top: 10px;
       }
+
+      button:disabled {
+        background: #333333;
+        cursor: not-allowed;
+        opacity: 0.7;
+      }
     `;
 
     document.head.appendChild(styles);
     document.body.appendChild(this.container);
-    this.updateProfileSelect();
-  }
-
-  private updateProfileSelect(): void {
-    const select = document.getElementById('deck-profile-select') as HTMLSelectElement;
-    if (!select) return;
-
-    console.log('Updating profile select...');
-
-    // Clear existing options except default
-    while (select.options.length > 1) {
-      select.remove(1);
-    }
-
-    // Add profiles
-    const profiles = this.deckProfileManager.getAllProfiles();
-    console.log('Available profiles:', profiles);
-
-    profiles.forEach(profile => {
-      const option = document.createElement('option');
-      option.value = profile.id;
-      option.textContent = profile.name;
-      select.appendChild(option);
-    });
-
-    // Set current selection
-    const activeProfile = this.deckProfileManager.getActiveProfile();
-    console.log('Active profile:', activeProfile);
-    
-    if (activeProfile) {
-      select.value = activeProfile.id;
-    } else {
-      select.value = '';
-    }
+    this.updateDrawButton();
   }
 
   private setupEventListeners(): void {
+    // Button handlers
+    const shuffleBtn = document.getElementById('shuffle');
+    const drawCardBtn = document.getElementById('draw-card');
+    const returnCardBtn = document.getElementById('return-card');
+    const resetBtn = document.getElementById('reset');
+
+    // Shuffle button
+    shuffleBtn?.addEventListener('click', async () => {
+      await this.deckManager.shuffle();
+    });
+
+    // Draw card button
+    drawCardBtn?.addEventListener('click', async () => {
+      const spread = this.stateManager.getCurrentSpread();
+      if (!spread) {
+        console.warn('No spread selected');
+        return;
+      }
+
+      const currentPosition = spread.positions[this.currentSpreadIndex];
+      if (!currentPosition) {
+        console.warn('No more positions available in spread');
+        return;
+      }
+
+      // Convert Vector3 to THREE.Vector3 and Vector3 to THREE.Euler
+      const position = new THREE.Vector3(
+        currentPosition.position.x,
+        currentPosition.position.y,
+        currentPosition.position.z
+      );
+      
+      const rotation = new THREE.Euler(
+        currentPosition.rotation.x,
+        currentPosition.rotation.y,
+        currentPosition.rotation.z
+      );
+
+      const card = await this.drawingManager.drawCard(position, rotation);
+      if (card) {
+        this.deckManager.drawCard();
+        this.showCardInfo(currentPosition.name, currentPosition.description);
+        this.currentSpreadIndex++;
+      }
+      this.updateDrawButton();
+    });
+
+    // Return card button
+    returnCardBtn?.addEventListener('click', async () => {
+      const drawnCards = this.drawingManager.getDrawnCards();
+      if (drawnCards.length === 0) return;
+
+      const lastCard = drawnCards[drawnCards.length - 1];
+      await this.drawingManager.returnCardToDeck(lastCard);
+      this.deckManager.returnCard();
+      if (this.currentSpreadIndex > 0) {
+        this.currentSpreadIndex--;
+      }
+      this.hideCardInfo();
+      this.updateDrawButton();
+    });
+
+    // Reset button
+    resetBtn?.addEventListener('click', () => {
+      this.deckManager.reset();
+      this.currentSpreadIndex = 0;
+      this.hideCardInfo();
+      this.updateDrawButton();
+    });
+
     // Spread selection
     const spreadSelect = document.getElementById('spread-select');
     if (spreadSelect) {
@@ -181,129 +231,31 @@ export class UIManager {
         const target = e.target as HTMLSelectElement;
         const spread = SPREADS[target.value as keyof typeof SPREADS];
         this.stateManager.setSpread(spread);
+        this.currentSpreadIndex = 0;
+        this.updateDrawButton();
       });
     }
+  }
 
-    // Profile selection
-    const profileSelect = document.getElementById('deck-profile-select');
-    if (profileSelect) {
-      profileSelect.addEventListener('change', (e) => {
-        const target = e.target as HTMLSelectElement;
-        const profile = target.value ? 
-          this.deckProfileManager.getProfile(target.value) : 
-          null;
-        console.log('Profile selected:', profile);
-        this.deckProfileManager.setActiveProfile(target.value || null);
-        this.stateManager.setActiveDeckProfile(profile);
-      });
-    }
+  private updateDrawButton(): void {
+    const drawBtn = document.getElementById('draw-card') as HTMLButtonElement;
+    const returnBtn = document.getElementById('return-card') as HTMLButtonElement;
+    if (!drawBtn || !returnBtn) return;
 
-    // Profile management buttons
-    const newProfileBtn = document.getElementById('new-profile');
-    const editProfileBtn = document.getElementById('edit-profile');
-    const cancelProfileBtn = document.getElementById('cancel-profile');
-    const profileForm = document.getElementById('profile-form');
-    const profileModal = document.getElementById('profile-modal');
+    const remainingCards = this.deckManager.getRemainingCards();
+    const drawnCards = this.drawingManager.getDrawnCards().length;
+    const spread = this.stateManager.getCurrentSpread();
 
-    newProfileBtn?.addEventListener('click', () => {
-      // Clear form when creating new profile
-      const nameInput = document.getElementById('profile-name') as HTMLInputElement;
-      const creatorInput = document.getElementById('profile-creator') as HTMLInputElement;
-      const descriptionInput = document.getElementById('profile-description') as HTMLTextAreaElement;
+    drawBtn.disabled = remainingCards === 0 || 
+                      !spread || 
+                      this.currentSpreadIndex >= (spread?.positions.length || 0);
+    returnBtn.disabled = drawnCards === 0;
 
-      if (nameInput) nameInput.value = '';
-      if (creatorInput) creatorInput.value = '';
-      if (descriptionInput) descriptionInput.value = '';
-
-      if (profileModal) profileModal.style.display = 'block';
-    });
-
-    editProfileBtn?.addEventListener('click', () => {
-      const activeProfile = this.deckProfileManager.getActiveProfile();
-      if (!activeProfile) {
-        console.log('No active profile to edit');
-        return;
-      }
-
-      console.log('Editing profile:', activeProfile);
-
-      const nameInput = document.getElementById('profile-name') as HTMLInputElement;
-      const creatorInput = document.getElementById('profile-creator') as HTMLInputElement;
-      const descriptionInput = document.getElementById('profile-description') as HTMLTextAreaElement;
-
-      if (nameInput) nameInput.value = activeProfile.name;
-      if (creatorInput) creatorInput.value = activeProfile.creator;
-      if (descriptionInput) descriptionInput.value = activeProfile.metadata?.description || '';
-
-      if (profileModal) profileModal.style.display = 'block';
-    });
-
-    cancelProfileBtn?.addEventListener('click', () => {
-      if (profileModal) profileModal.style.display = 'none';
-    });
-
-    profileForm?.addEventListener('submit', (e) => {
-      e.preventDefault();
-      const formData = new FormData(e.target as HTMLFormElement);
-      const activeProfile = this.deckProfileManager.getActiveProfile();
-
-      console.log('Form data:', {
-        name: formData.get('profile-name'),
-        creator: formData.get('profile-creator'),
-        description: formData.get('profile-description')
-      });
-
-      const profileData = {
-        name: formData.get('profile-name') as string,
-        creator: formData.get('profile-creator') as string,
-        metadata: {
-          description: formData.get('profile-description') as string
-        },
-        cardTextures: {}
-      };
-
-      if (activeProfile) {
-        console.log('Updating profile:', activeProfile.id, profileData);
-        this.deckProfileManager.updateProfile(activeProfile.id, profileData);
-      } else {
-        console.log('Creating new profile:', profileData);
-        this.deckProfileManager.createProfile(profileData);
-      }
-
-      if (profileModal) profileModal.style.display = 'none';
-      this.updateProfileSelect();
-    });
-
-    // Button handlers
-    const shuffleBtn = document.getElementById('shuffle');
-    const resetBtn = document.getElementById('reset');
-    const multiplayerBtn = document.getElementById('multiplayer');
-
-    shuffleBtn?.addEventListener('click', async () => {
-      await this.deckManager.shuffle();
-    });
-
-    resetBtn?.addEventListener('click', () => {
-      // Implement reset logic
-    });
-
-    multiplayerBtn?.addEventListener('click', () => {
-      // Implement multiplayer logic
-    });
-
-    // Listen for profile changes
-    this.deckProfileManager.on('profileCreated', () => {
-      console.log('Profile created event received');
-      this.updateProfileSelect();
-    });
-    this.deckProfileManager.on('profileUpdated', () => {
-      console.log('Profile updated event received');
-      this.updateProfileSelect();
-    });
-    this.deckProfileManager.on('profileDeleted', () => {
-      console.log('Profile deleted event received');
-      this.updateProfileSelect();
-    });
+    drawBtn.title = remainingCards === 0 ? 'No cards left in deck' : 
+                   !spread ? 'Select a spread first' :
+                   this.currentSpreadIndex >= spread.positions.length ? 'Spread complete' :
+                   `${remainingCards} cards remaining`;
+    returnBtn.title = drawnCards === 0 ? 'No cards to return' : `${drawnCards} cards drawn`;
   }
 
   public showCardInfo(name: string, description: string): void {

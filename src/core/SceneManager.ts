@@ -9,17 +9,25 @@ export class SceneManager {
   private controls: OrbitControls;
 
   private constructor() {
+    // Create scene with dark gray background
     this.scene = new THREE.Scene();
+    this.scene.background = new THREE.Color(0x333333);
+    
+    // Create camera with wider FOV
     this.camera = new THREE.PerspectiveCamera(
-      75,
+      75, // FOV
       window.innerWidth / window.innerHeight,
       0.1,
       1000
     );
+    
+    // Create renderer
     this.renderer = new THREE.WebGLRenderer({ 
       antialias: true,
       alpha: true 
     });
+    
+    // Create controls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
   }
 
@@ -37,41 +45,36 @@ export class SceneManager {
     document.getElementById('app')?.appendChild(this.renderer.domElement);
 
     // Setup camera
-    this.camera.position.z = 5;
+    this.camera.position.set(0, 5, 10); // Move camera back and up
+    this.camera.lookAt(0, 0, 0);
 
     // Setup controls
     this.controls.enableDamping = true;
     this.controls.dampingFactor = 0.05;
+    this.controls.minDistance = 3;
+    this.controls.maxDistance = 20;
 
-    // Setup lighting
+    // Add ambient light
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
+    this.scene.add(ambientLight);
+
+    // Add directional light
     const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
     directionalLight.position.set(5, 5, 5);
-    this.scene.add(ambientLight, directionalLight);
+    this.scene.add(directionalLight);
 
-    // Add test object
-    const geometry = new THREE.BoxGeometry(1, 1, 0.1);
-    const material = new THREE.MeshStandardMaterial({ 
-      color: 0x00ff00,
-      metalness: 0.3,
-      roughness: 0.4
-    });
-    const cube = new THREE.Mesh(geometry, material);
-    this.scene.add(cube);
+    // Add grid helper
+    const gridHelper = new THREE.GridHelper(20, 20, 0x666666, 0x444444);
+    this.scene.add(gridHelper);
 
-    // Rotate the cube slightly
-    cube.rotation.x = 0.2;
-    cube.rotation.y = 0.4;
+    // Add axes helper
+    const axesHelper = new THREE.AxesHelper(5);
+    this.scene.add(axesHelper);
 
     // Handle window resize
     window.addEventListener('resize', this.onWindowResize.bind(this));
 
-    // Add grid helper
-    const gridHelper = new THREE.GridHelper(10, 10);
-    this.scene.add(gridHelper);
-
-    // Console log to confirm initialization
-    console.log('Scene initialized');
+    console.log('Scene initialized with camera at:', this.camera.position);
   }
 
   public update(): void {
