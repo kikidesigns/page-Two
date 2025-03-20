@@ -17,6 +17,8 @@ export class Card {
   private isFaceUp: boolean = false;
   private frontTexture: THREE.Texture;
   private backTexture: THREE.Texture;
+  private frontCard: THREE.Mesh;
+  private backCard: THREE.Mesh;
 
   constructor(props: CardProps) {
     const { 
@@ -32,26 +34,37 @@ export class Card {
     this.frontTexture = frontTexture;
     this.backTexture = backTexture;
 
-    // Create front and back materials with textures
-    const frontMaterial = new THREE.MeshBasicMaterial({ 
-      map: frontTexture,
-      side: THREE.FrontSide
-    });
-
-    const backMaterial = new THREE.MeshBasicMaterial({ 
-      map: backTexture,
-      side: THREE.BackSide
+    // Configure textures
+    [frontTexture, backTexture].forEach(texture => {
+      texture.flipY = false;
+      texture.needsUpdate = true;
     });
 
     // Create card mesh as a Group
     this.mesh = new THREE.Group();
     
-    // Create main card plane
-    const cardPlane = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1.75),
-      [frontMaterial, backMaterial]
-    );
-    this.mesh.add(cardPlane);
+    // Create separate meshes for front and back faces
+    const cardGeometry = new THREE.PlaneGeometry(1, 1.75);
+    cardGeometry.attributes.uv.needsUpdate = true;
+
+    // Create front face
+    const frontMaterial = new THREE.MeshBasicMaterial({ 
+      map: frontTexture,
+      side: THREE.DoubleSide
+    });
+    this.frontCard = new THREE.Mesh(cardGeometry, frontMaterial);
+
+    // Create back face
+    const backMaterial = new THREE.MeshBasicMaterial({ 
+      map: backTexture,
+      side: THREE.DoubleSide
+    });
+    this.backCard = new THREE.Mesh(cardGeometry, backMaterial);
+    this.backCard.rotation.y = Math.PI;
+    this.backCard.position.z = -0.01;
+
+    this.mesh.add(this.frontCard);
+    this.mesh.add(this.backCard);
 
     // Add border
     const borderGeometry = new THREE.PlaneGeometry(1.05, 1.80);
@@ -60,7 +73,7 @@ export class Card {
       side: THREE.DoubleSide
     });
     const border = new THREE.Mesh(borderGeometry, borderMaterial);
-    border.position.z = -0.01;
+    border.position.z = -0.02;
     this.mesh.add(border);
 
     if (showDecorations) {
@@ -69,7 +82,7 @@ export class Card {
       const decorGeometry = new THREE.PlaneGeometry(decorSize, decorSize);
       const decorMaterial = new THREE.MeshBasicMaterial({ 
         color: decorColor,
-        side: THREE.FrontSide
+        side: THREE.DoubleSide
       });
 
       // Add corner decorations
@@ -101,7 +114,15 @@ export class Card {
     console.log('Card created:', {
       position: this.mesh.position.toArray(),
       rotation: this.mesh.rotation.toArray(),
-      scale: this.mesh.scale.toArray()
+      scale: this.mesh.scale.toArray(),
+      frontTexture: {
+        uuid: frontTexture.uuid,
+        size: `${frontTexture.image?.width}x${frontTexture.image?.height}`,
+      },
+      backTexture: {
+        uuid: backTexture.uuid,
+        size: `${backTexture.image?.width}x${backTexture.image?.height}`,
+      }
     });
   }
 
@@ -150,24 +171,23 @@ export class Card {
     this.frontTexture = frontTexture;
     this.backTexture = backTexture;
 
+    // Configure new textures
+    [frontTexture, backTexture].forEach(texture => {
+      texture.flipY = false;
+      texture.needsUpdate = true;
+    });
+
     // Update materials
-    const cardPlane = this.mesh.children[0] as THREE.Mesh;
-    if (Array.isArray(cardPlane.material)) {
-      cardPlane.material[0].map = frontTexture;
-      cardPlane.material[1].map = backTexture;
-      cardPlane.material[0].needsUpdate = true;
-      cardPlane.material[1].needsUpdate = true;
-    }
+    (this.frontCard.material as THREE.MeshBasicMaterial).map = frontTexture;
+    (this.backCard.material as THREE.MeshBasicMaterial).map = backTexture;
+    this.frontCard.material.needsUpdate = true;
+    this.backCard.material.needsUpdate = true;
   }
 
   public dispose(): void {
     this.mesh.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        if (Array.isArray(child.material)) {
-          child.material.forEach(m => m.dispose());
-        } else {
-          child.material.dispose();
-        }
+        child.material.dispose();
         child.geometry.dispose();
       }
     });
