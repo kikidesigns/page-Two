@@ -1,0 +1,143 @@
+/* Image Upload Zone */
+.image-upload-zone {
+  max-width: 800px;
+  margin: 0 auto;
+  padding: 20px;
+}
+
+/* Dropzone */
+.dropzone {
+  border: 2px dashed #ddd;
+  border-radius: 8px;
+  padding: 20px;
+  text-align: center;
+  background: #f8f9fa;
+  cursor: pointer;
+  transition: all 0.2s;
+}
+
+.dropzone:hover,
+.dropzone-active {
+  border-color: #4a90e2;
+  background: #e8f0fe;
+}
+
+.dropzone-content {
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  gap: 10px;
+}
+
+.dropzone-icon {
+  font-size: 32px;
+  color: #6c757d;
+}
+
+.dropzone-text {
+  color: #495057;
+  font-size: 14px;
+}
+
+.dropzone input[type="file"] {
+  display: none;
+}
+
+/* Preview Container */
+.preview-container {
+  display: grid;
+  grid-template-columns: repeat(auto-fill, minmax(150px, 1fr));
+  gap: 15px;
+  margin-top: 20px;
+}
+
+.preview-item {
+  background: white;
+  border-radius: 8px;
+  padding: 10px;
+  box-shadow: 0 2px 4px rgba(0, 0, 0, 0.1);
+}
+
+.preview-thumbnail {
+  aspect-ratio: 1/1;
+  background-size: cover;
+  background-position: center;
+  border-radius: 4px;
+  margin-bottom: 10px;
+  background-color: #f8f9fa;
+}
+
+/* Progress Bar */
+.progress-container {
+  margin: 10px 0;
+}
+
+.progress-label {
+  font-size: 12px;
+  color: #6c757d;
+  margin-bottom: 5px;
+}
+
+.progress-bar {
+  height: 4px;
+  background: #e9ecef;
+  border-radius: 2px;
+  overflow: hidden;
+}
+
+.progress-bar > div {
+  height: 100%;
+  background: #4a90e2;
+  transition: width 0.2s;
+}
+
+.progress-primary > div {
+  background: #4a90e2;
+}
+
+.progress-success > div {
+  background: #28a745;
+}
+
+.progress-danger > div {
+  background: #dc3545;
+}
+
+/* Status Text */
+.preview-status {
+  font-size: 12px;
+  text-align: center;
+  margin-top: 5px;
+}
+
+.status-pending {
+  color: #6c757d;
+}
+
+.status-processing {
+  color: #4a90e2;
+}
+
+.status-success {
+  color: #28a745;
+}
+
+.status-error {
+  color: #dc3545;
+}
+
+/* Error Messages */
+.upload-error {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: center;
+}
+
+/* Success Messages */
+.upload-success {
+  color: #28a745;
+  font-size: 12px;
+  margin-top: 5px;
+  text-align: center;
+}
