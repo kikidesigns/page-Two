@@ -41,20 +41,20 @@ export class CardGridManager extends EventEmitter {
   }
 
   private initializeSlots(): void {
-    // Initialize standard tarot card slots
-    const majorArcana = Array.from({ length: 22 }, (_, i) => ({
-      id: `major-${i}`,
-      name: `Major Arcana ${i}`
-    }));
+    // Initialize a smaller test deck
+    const testDeck = [
+      { id: 'major-0', name: 'The Fool' },
+      { id: 'major-1', name: 'The Magician' },
+      { id: 'major-2', name: 'The High Priestess' },
+      { id: 'wands-1', name: 'Ace of Wands' },
+      { id: 'wands-2', name: 'Two of Wands' },
+      { id: 'cups-1', name: 'Ace of Cups' },
+      { id: 'cups-2', name: 'Two of Cups' },
+      { id: 'swords-1', name: 'Ace of Swords' },
+      { id: 'pentacles-1', name: 'Ace of Pentacles' }
+    ];
 
-    const minorArcana = ['Wands', 'Cups', 'Swords', 'Pentacles'].flatMap(suit =>
-      Array.from({ length: 14 }, (_, i) => ({
-        id: `${suit.toLowerCase()}-${i}`,
-        name: `${i} of ${suit}`
-      }))
-    );
-
-    [...majorArcana, ...minorArcana].forEach(card => {
+    testDeck.forEach(card => {
       this.slots.set(card.id, card);
     });
 
