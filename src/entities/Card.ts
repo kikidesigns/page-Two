@@ -17,6 +17,8 @@ export class Card {
   private isFaceUp: boolean = false;
   private frontTexture: THREE.Texture;
   private backTexture: THREE.Texture;
+  private frontCard: THREE.Mesh;
+  private backCard: THREE.Mesh;
 
   constructor(props: CardProps) {
     const { 
@@ -32,44 +34,66 @@ export class Card {
     this.frontTexture = frontTexture;
     this.backTexture = backTexture;
 
-    // Create front and back materials with textures
-    const frontMaterial = new THREE.MeshBasicMaterial({ 
-      map: frontTexture,
-      side: THREE.FrontSide
+    // Configure textures
+    [frontTexture, backTexture].forEach(texture => {
+      texture.flipY = false;
+      texture.encoding = THREE.sRGBEncoding;
+      texture.needsUpdate = true;
     });
 
-    const backMaterial = new THREE.MeshBasicMaterial({ 
+    // Create materials with proper settings
+    const frontMaterial = new THREE.MeshStandardMaterial({ 
+      map: frontTexture,
+      side: THREE.DoubleSide,
+      transparent: true,
+      alphaTest: 0.5
+    });
+
+    const backMaterial = new THREE.MeshStandardMaterial({ 
       map: backTexture,
-      side: THREE.BackSide
+      side: THREE.DoubleSide,
+      transparent: true,
+      alphaTest: 0.5
     });
 
     // Create card mesh as a Group
     this.mesh = new THREE.Group();
     
-    // Create main card plane
-    const cardPlane = new THREE.Mesh(
-      new THREE.PlaneGeometry(1, 1.75),
-      [frontMaterial, backMaterial]
-    );
-    this.mesh.add(cardPlane);
+    // Create separate meshes for front and back faces
+    const cardGeometry = new THREE.PlaneGeometry(1, 1.75);
+    cardGeometry.attributes.uv.needsUpdate = true;
+
+    this.frontCard = new THREE.Mesh(cardGeometry, frontMaterial);
+    this.backCard = new THREE.Mesh(cardGeometry, backMaterial);
+
+    // Position back face
+    this.backCard.rotation.y = Math.PI;
+    this.backCard.position.z = -0.01;
+
+    this.mesh.add(this.frontCard);
+    this.mesh.add(this.backCard);
 
     // Add border
     const borderGeometry = new THREE.PlaneGeometry(1.05, 1.80);
-    const borderMaterial = new THREE.MeshBasicMaterial({ 
+    const borderMaterial = new THREE.MeshStandardMaterial({ 
       color: borderColor,
-      side: THREE.DoubleSide
+      side: THREE.DoubleSide,
+      transparent: true,
+      alphaTest: 0.5
     });
     const border = new THREE.Mesh(borderGeometry, borderMaterial);
-    border.position.z = -0.01;
+    border.position.z = -0.02;
     this.mesh.add(border);
 
     if (showDecorations) {
       // Add decorative elements
       const decorSize = 0.2;
       const decorGeometry = new THREE.PlaneGeometry(decorSize, decorSize);
-      const decorMaterial = new THREE.MeshBasicMaterial({ 
+      const decorMaterial = new THREE.MeshStandardMaterial({ 
         color: decorColor,
-        side: THREE.FrontSide
+        side: THREE.DoubleSide,
+        transparent: true,
+        alphaTest: 0.5
       });
 
       // Add corner decorations
@@ -95,14 +119,37 @@ export class Card {
     this.mesh.rotation.x = -Math.PI / 2;
 
     // Add debug helpers
-    const axesHelper = new THREE.AxesHelper(1);
-    this.mesh.add(axesHelper);
+    if (process.env.NODE_ENV === 'development') {
+      const axesHelper = new THREE.AxesHelper(1);
+      this.mesh.add(axesHelper);
 
-    console.log('Card created:', {
-      position: this.mesh.position.toArray(),
-      rotation: this.mesh.rotation.toArray(),
-      scale: this.mesh.scale.toArray()
-    });
+      // Add wireframe helpers
+      const wireframe = new THREE.WireframeGeometry(cardGeometry);
+      const line = new THREE.LineSegments(wireframe);
+      this.mesh.add(line);
+
+      // Add normal helpers
+      const frontNormals = new THREE.FaceNormalsHelper(this.frontCard, 0.2, 0x00ff00);
+      const backNormals = new THREE.FaceNormalsHelper(this.backCard, 0.2, 0xff0000);
+      this.mesh.add(frontNormals);
+      this.mesh.add(backNormals);
+
+      console.log('Card created:', {
+        position: this.mesh.position.toArray(),
+        rotation: this.mesh.rotation.toArray(),
+        scale: this.mesh.scale.toArray(),
+        frontTexture: {
+          uuid: frontTexture.uuid,
+          size: `${frontTexture.image?.width}x${frontTexture.image?.height}`,
+          encoding: frontTexture.encoding
+        },
+        backTexture: {
+          uuid: backTexture.uuid,
+          size: `${backTexture.image?.width}x${backTexture.image?.height}`,
+          encoding: backTexture.encoding
+        }
+      });
+    }
   }
 
   public getMesh(): THREE.Object3D {
@@ -150,24 +197,24 @@ export class Card {
     this.frontTexture = frontTexture;
     this.backTexture = backTexture;
 
+    // Configure new textures
+    [frontTexture, backTexture].forEach(texture => {
+      texture.flipY = false;
+      texture.encoding = THREE.sRGBEncoding;
+      texture.needsUpdate = true;
+    });
+
     // Update materials
-    const cardPlane = this.mesh.children[0] as THREE.Mesh;
-    if (Array.isArray(cardPlane.material)) {
-      cardPlane.material[0].map = frontTexture;
-      cardPlane.material[1].map = backTexture;
-      cardPlane.material[0].needsUpdate = true;
-      cardPlane.material[1].needsUpdate = true;
-    }
+    (this.frontCard.material as THREE.MeshStandardMaterial).map = frontTexture;
+    (this.backCard.material as THREE.MeshStandardMaterial).map = backTexture;
+    this.frontCard.material.needsUpdate = true;
+    this.backCard.material.needsUpdate = true;
   }
 
   public dispose(): void {
     this.mesh.traverse((child) => {
       if (child instanceof THREE.Mesh) {
-        if (Array.isArray(child.material)) {
-          child.material.forEach(m => m.dispose());
-        } else {
-          child.material.dispose();
-        }
+        child.material.dispose();
         child.geometry.dispose();
       }
     });
