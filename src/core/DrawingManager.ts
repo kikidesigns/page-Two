@@ -4,6 +4,7 @@ import { Card } from '../entities/Card';
 import { SceneManager } from './SceneManager';
 import { DeckManager } from './DeckManager';
 import { TextureManager } from './TextureManager';
+import { DeckProfileManager } from './DeckProfileManager';
 import { EventEmitter } from 'events';
 
 export class DrawingManager extends EventEmitter {
@@ -11,15 +12,18 @@ export class DrawingManager extends EventEmitter {
   private sceneManager: SceneManager;
   private deckManager: DeckManager;
   private textureManager: TextureManager;
+  private profileManager: DeckProfileManager;
   private drawnCards: Card[] = [];
   private isAnimating: boolean = false;
   private isInitialized: boolean = false;
+  private currentCardId: number = 0;
 
   private constructor() {
     super();
     this.sceneManager = SceneManager.getInstance();
     this.deckManager = DeckManager.getInstance();
     this.textureManager = TextureManager.getInstance();
+    this.profileManager = DeckProfileManager.getInstance();
   }
 
   public static getInstance(): DrawingManager {
@@ -34,6 +38,38 @@ export class DrawingManager extends EventEmitter {
     if (!this.isInitialized) {
       this.isInitialized = true;
       console.log('DrawingManager: Initialization complete');
+    }
+  }
+
+  private async getCardTextures(cardId: string): Promise<{
+    frontTexture: THREE.Texture;
+    backTexture: THREE.Texture;
+  }> {
+    try {
+      const [frontTexture, backTexture] = await Promise.all([
+        this.profileManager.getCardTexture(cardId),
+        this.profileManager.getBackTexture()
+      ]);
+
+      console.log('DrawingManager: Card textures loaded:', {
+        cardId,
+        frontTexture: {
+          uuid: frontTexture.uuid,
+          size: `${frontTexture.image?.width}x${frontTexture.image?.height}`,
+        },
+        backTexture: {
+          uuid: backTexture.uuid,
+          size: `${backTexture.image?.width}x${backTexture.image?.height}`,
+        }
+      });
+
+      return { frontTexture, backTexture };
+    } catch (error) {
+      console.error('DrawingManager: Failed to load card textures:', error);
+      return {
+        frontTexture: this.textureManager.getDefaultFrontTexture(),
+        backTexture: this.textureManager.getDefaultBackTexture()
+      };
     }
   }
 
@@ -62,9 +98,9 @@ export class DrawingManager extends EventEmitter {
       const deckPosition = this.deckManager.getDeckPosition();
       console.log('DrawingManager: Deck position:', deckPosition);
 
-      // Get front and back textures
-      const frontTexture = this.textureManager.getDefaultFrontTexture();
-      const backTexture = this.textureManager.getDefaultBackTexture();
+      // Get card textures
+      const cardId = `card_${this.currentCardId++}`;
+      const { frontTexture, backTexture } = await this.getCardTextures(cardId);
 
       console.log('DrawingManager: Creating card instance...');
       const card = new Card({
@@ -82,14 +118,7 @@ export class DrawingManager extends EventEmitter {
         position: cardMesh.position.toArray(),
         rotation: cardMesh.rotation.toArray(),
         scale: cardMesh.scale.toArray(),
-        frontTexture: {
-          uuid: frontTexture.uuid,
-          size: `${frontTexture.image?.width}x${frontTexture.image?.height}`,
-        },
-        backTexture: {
-          uuid: backTexture.uuid,
-          size: `${backTexture.image?.width}x${backTexture.image?.height}`,
-        }
+        cardId
       });
 
       // Add to scene
