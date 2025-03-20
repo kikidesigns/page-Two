@@ -21,11 +21,17 @@ export class SceneManager {
       1000
     );
     
-    // Create renderer
+    // Create renderer with physically correct lighting
     this.renderer = new THREE.WebGLRenderer({ 
       antialias: true,
       alpha: true 
     });
+    this.renderer.physicallyCorrectLights = true;
+    this.renderer.outputEncoding = THREE.sRGBEncoding;
+    this.renderer.toneMapping = THREE.ACESFilmicToneMapping;
+    this.renderer.toneMappingExposure = 1.0;
+    this.renderer.shadowMap.enabled = true;
+    this.renderer.shadowMap.type = THREE.PCFSoftShadowMap;
     
     // Create controls
     this.controls = new OrbitControls(this.camera, this.renderer.domElement);
@@ -58,10 +64,24 @@ export class SceneManager {
     const ambientLight = new THREE.AmbientLight(0xffffff, 0.5);
     this.scene.add(ambientLight);
 
-    // Add directional light
-    const directionalLight = new THREE.DirectionalLight(0xffffff, 1);
-    directionalLight.position.set(5, 5, 5);
-    this.scene.add(directionalLight);
+    // Add hemisphere light
+    const hemiLight = new THREE.HemisphereLight(0xffffff, 0x444444, 0.8);
+    hemiLight.position.set(0, 20, 0);
+    this.scene.add(hemiLight);
+
+    // Add directional lights
+    const mainLight = new THREE.DirectionalLight(0xffffff, 1);
+    mainLight.position.set(5, 5, 5);
+    mainLight.castShadow = true;
+    mainLight.shadow.mapSize.width = 2048;
+    mainLight.shadow.mapSize.height = 2048;
+    mainLight.shadow.camera.near = 0.5;
+    mainLight.shadow.camera.far = 50;
+    this.scene.add(mainLight);
+
+    const fillLight = new THREE.DirectionalLight(0xffffff, 0.5);
+    fillLight.position.set(-5, 3, -5);
+    this.scene.add(fillLight);
 
     // Add grid helper
     const gridHelper = new THREE.GridHelper(20, 20, 0x666666, 0x444444);
@@ -70,6 +90,21 @@ export class SceneManager {
     // Add axes helper
     const axesHelper = new THREE.AxesHelper(5);
     this.scene.add(axesHelper);
+
+    if (process.env.NODE_ENV === 'development') {
+      // Add light helpers in development
+      const hemiLightHelper = new THREE.HemisphereLightHelper(hemiLight, 1);
+      this.scene.add(hemiLightHelper);
+
+      const mainLightHelper = new THREE.DirectionalLightHelper(mainLight, 1);
+      this.scene.add(mainLightHelper);
+
+      const fillLightHelper = new THREE.DirectionalLightHelper(fillLight, 1);
+      this.scene.add(fillLightHelper);
+
+      const mainLightCameraHelper = new THREE.CameraHelper(mainLight.shadow.camera);
+      this.scene.add(mainLightCameraHelper);
+    }
 
     // Handle window resize
     window.addEventListener('resize', this.onWindowResize.bind(this));
