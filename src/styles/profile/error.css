@@ -1,0 +1,126 @@
+/* Error Messages */
+.error-message {
+  background-color: #dc3545;
+  color: white;
+  padding: 10px 15px;
+  border-radius: 4px;
+  margin: 10px 0;
+  display: flex;
+  align-items: center;
+  gap: 10px;
+}
+
+.error-message .error-icon {
+  font-size: 20px;
+}
+
+.error-message .error-text {
+  flex: 1;
+}
+
+.error-message .error-close {
+  background: none;
+  border: none;
+  color: white;
+  font-size: 20px;
+  cursor: pointer;
+  padding: 0;
+  opacity: 0.8;
+}
+
+.error-message .error-close:hover {
+  opacity: 1;
+}
+
+/* Error States */
+.input-error {
+  border-color: #dc3545;
+}
+
+.error-feedback {
+  color: #dc3545;
+  font-size: 12px;
+  margin-top: 4px;
+}
+
+/* Error Animation */
+@keyframes shake {
+  0%, 100% { transform: translateX(0); }
+  10%, 30%, 50%, 70%, 90% { transform: translateX(-5px); }
+  20%, 40%, 60%, 80% { transform: translateX(5px); }
+}
+
+.error-shake {
+  animation: shake 0.6s cubic-bezier(.36,.07,.19,.97) both;
+}
+
+/* Error Tooltip */
+.error-tooltip {
+  position: relative;
+  display: inline-block;
+}
+
+.error-tooltip .tooltip-text {
+  visibility: hidden;
+  background-color: #dc3545;
+  color: white;
+  text-align: center;
+  padding: 5px 10px;
+  border-radius: 4px;
+  position: absolute;
+  z-index: 1;
+  bottom: 125%;
+  left: 50%;
+  transform: translateX(-50%);
+  white-space: nowrap;
+  font-size: 12px;
+  opacity: 0;
+  transition: opacity 0.3s;
+}
+
+.error-tooltip .tooltip-text::after {
+  content: "";
+  position: absolute;
+  top: 100%;
+  left: 50%;
+  margin-left: -5px;
+  border-width: 5px;
+  border-style: solid;
+  border-color: #dc3545 transparent transparent transparent;
+}
+
+.error-tooltip:hover .tooltip-text {
+  visibility: visible;
+  opacity: 1;
+}
+
+/* Error Boundary Fallback */
+.error-boundary-fallback {
+  padding: 20px;
+  background: #2a2a2a;
+  border-radius: 8px;
+  text-align: center;
+}
+
+.error-boundary-fallback h3 {
+  color: #dc3545;
+  margin: 0 0 10px 0;
+}
+
+.error-boundary-fallback p {
+  margin: 0 0 15px 0;
+  color: #adb5bd;
+}
+
+.error-boundary-fallback button {
+  background: #dc3545;
+  color: white;
+  border: none;
+  padding: 8px 16px;
+  border-radius: 4px;
+  cursor: pointer;
+}
+
+.error-boundary-fallback button:hover {
+  background: #c82333;
+}
