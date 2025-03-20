@@ -20,6 +20,14 @@ export class TextureManager {
     return TextureManager.instance;
   }
 
+  private configureTexture(texture: THREE.Texture): void {
+    texture.flipY = false;
+    texture.minFilter = THREE.LinearFilter;
+    texture.magFilter = THREE.LinearFilter;
+    texture.generateMipmaps = false;
+    texture.needsUpdate = true;
+  }
+
   public async loadTexture(url: string): Promise<THREE.Texture> {
     if (this.textureCache.has(url)) {
       return this.textureCache.get(url)!;
@@ -29,6 +37,7 @@ export class TextureManager {
       this.textureLoader.load(
         url,
         (texture) => {
+          this.configureTexture(texture);
           this.textureCache.set(url, texture);
           resolve(texture);
         },
@@ -42,6 +51,7 @@ export class TextureManager {
     try {
       this.imageProcessor.validateImage(file);
       const processed = await this.imageProcessor.processImage(file);
+      this.configureTexture(processed.texture);
       this.textureCache.set(processed.dataUrl, processed.texture);
       return processed;
     } catch (error) {
@@ -50,7 +60,6 @@ export class TextureManager {
   }
 
   public getDefaultFrontTexture(): THREE.Texture {
-    // Create a default front texture with a simple pattern
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 896; // Maintains 1:1.75 ratio
@@ -60,18 +69,42 @@ export class TextureManager {
     ctx.fillStyle = '#ffffff';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Add a simple pattern
+    // Add a grid pattern
     ctx.strokeStyle = '#880000';
+    ctx.lineWidth = 2;
+
+    // Vertical lines
+    for (let x = 40; x < canvas.width - 40; x += 40) {
+      ctx.beginPath();
+      ctx.moveTo(x, 40);
+      ctx.lineTo(x, canvas.height - 40);
+      ctx.stroke();
+    }
+
+    // Horizontal lines
+    for (let y = 40; y < canvas.height - 40; y += 40) {
+      ctx.beginPath();
+      ctx.moveTo(40, y);
+      ctx.lineTo(canvas.width - 40, y);
+      ctx.stroke();
+    }
+
+    // Add border
     ctx.lineWidth = 4;
     ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
 
+    // Add text for debugging
+    ctx.fillStyle = '#000000';
+    ctx.font = '48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('FRONT', canvas.width / 2, canvas.height / 2);
+
     const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
+    this.configureTexture(texture);
     return texture;
   }
 
   public getDefaultBackTexture(): THREE.Texture {
-    // Create a default back texture with a simple pattern
     const canvas = document.createElement('canvas');
     canvas.width = 512;
     canvas.height = 896;
@@ -81,18 +114,30 @@ export class TextureManager {
     ctx.fillStyle = '#000088';
     ctx.fillRect(0, 0, canvas.width, canvas.height);
 
-    // Add a pattern
+    // Add a diagonal pattern
     ctx.strokeStyle = '#ffffff';
     ctx.lineWidth = 2;
-    for (let i = 0; i < canvas.width; i += 20) {
+
+    // Draw diagonal lines
+    for (let i = -canvas.height; i < canvas.width; i += 20) {
       ctx.beginPath();
       ctx.moveTo(i, 0);
-      ctx.lineTo(i, canvas.height);
+      ctx.lineTo(i + canvas.height, canvas.height);
       ctx.stroke();
     }
 
+    // Add border
+    ctx.lineWidth = 4;
+    ctx.strokeRect(20, 20, canvas.width - 40, canvas.height - 40);
+
+    // Add text for debugging
+    ctx.fillStyle = '#ffffff';
+    ctx.font = '48px Arial';
+    ctx.textAlign = 'center';
+    ctx.fillText('BACK', canvas.width / 2, canvas.height / 2);
+
     const texture = new THREE.CanvasTexture(canvas);
-    texture.needsUpdate = true;
+    this.configureTexture(texture);
     return texture;
   }
 
